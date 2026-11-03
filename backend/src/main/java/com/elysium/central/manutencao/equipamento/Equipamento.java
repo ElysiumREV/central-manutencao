@@ -96,6 +96,11 @@ public class Equipamento {
         this.status = StatusEquipamento.INATIVO;
     }
 
+    public void registrarLeitura(BigDecimal valor, Instant dataHora) {
+        this.horimetroAtual = valor;
+        this.dataUltimaLeitura = dataHora;
+    }
+
     @PrePersist
     void aoCriar() {
         Instant agora = Instant.now();
