@@ -1,7 +1,7 @@
 # Contexto do projeto: Central de Monitoramento de Manutenção Preventiva por Horímetro
 
 > Documento de passagem de contexto. Se você é um LLM assumindo a conversa, leia tudo antes de responder.
-> Última atualização: 28/10/2026. Estado: **Fase 0 concluída**, próximo passo é o CRUD de equipamentos.
+> Última atualização: 03/11/2026. Estado atual: base funcionando; CRUD de equipamentos escrito e aguardando compilação e validação manual. Próximo passo: executar essa validação e corrigir eventuais problemas antes de iniciar planos.
 
 ---
 
@@ -70,6 +70,20 @@ Pacote base provável: `com.elysium.central.manutencao` (classe principal `Centr
 
 ## 4. Estado atual
 
+### Atualização de progresso — 03/11/2026
+
+- O usuário confirmou que a base (`docker compose up --build`) está funcionando.
+- O usuário atualizou o springdoc para a série 3.x, adequada ao Spring Boot 4; conferir o `pom.xml` real antes de assumir versão específica.
+- Em 03/11, ao investigar o Swagger, foi identificada a versão 3.0.0 no `pom.xml`. Atualizada para 3.2.0, versão cujo projeto declara alinhamento com Spring Boot 4.1.2. A hipótese é que a geração OpenAPI falhava mesmo com os endpoints REST respondendo; aguarda rebuild e validação pelo usuário. Referências: [releases springdoc](https://github.com/springdoc/springdoc-openapi/releases) e [issue de compatibilidade 3.0.0/Jackson](https://github.com/springdoc/springdoc-openapi/issues/3157).
+- CRUD de equipamentos implementado no pacote `backend/src/main/java/com/elysium/central/manutencao/equipamento/`.
+- Endpoints escritos: `POST /api/v1/equipamentos`, `GET /api/v1/equipamentos` com filtros/paginação, `GET /{id}`, `PUT /{id}` e `DELETE /{id}` para inativar.
+- Regras cobertas no código: horímetro inicial apenas no cadastro; atualização cadastral não altera horímetro; validação dos campos por Bean Validation; código duplicado retorna conflito; exclusão é lógica; `@Version` mapeia o lock otimista.
+- `git diff --check` passou. **Compilação, inicialização com Hibernate `ddl-auto: validate`, uso pelo Swagger e testes ainda não foram executados**; não considerar a feature validada até isso acontecer.
+- Forma de trabalho combinada: implementar em etapas pequenas e explicar responsabilidades e motivos para o usuário conseguir apresentar o projeto. Usuário prefere realizar manualmente o que for razoável para economizar tokens, mas precisa de suporte concreto na criação/codificação das features.
+- Prazo do desafio: 08/11/2026 às 23h59. Priorizar fluxo completo, documentação, testes e preparo para apresentação.
+
+O restante desta seção registra o estado e as pendências do planejamento original; use a atualização acima como referência quando houver divergência.
+
 ### Feito e validado pelo usuário
 
 - Repositório Git criado (monorepo) com `backend/`, `frontend/` e `docs/`.
@@ -80,7 +94,7 @@ Pacote base provável: `com.elysium.central.manutencao` (classe principal `Centr
 - Frontend gerado pelo Vite (react-ts).
 - `docker compose up --build`: **os três containers subiram corretamente e o usuário confirmou que tudo está funcionando.**
 
-### Pendências imediatas (Fase 0)
+### Pendências de infraestrutura/documentação do planejamento original
 
 - [ ] Trocar o `ENTRYPOINT` do `backend/Dockerfile` para `["sh", "-c", "exec java $JAVA_OPTS -jar app.jar"]`. Sem o `exec`, o sinal de parada pode não chegar à JVM.
 - [ ] Confirmar o proxy `/api` no `frontend/vite.config.ts` (`target: http://localhost:8080`, `changeOrigin: true`).
@@ -290,13 +304,13 @@ Outros casos: leitura menor que a anterior → 422; leitura igual → aceita; le
 
 ---
 
-## 10. API REST planejada (`/api/v1`)
+## 10. API REST (`/api/v1`)
 
-Nenhum endpoint existe ainda. Os controllers devem mapear `/api/v1/...` diretamente (sem `server.servlet.context-path`, para não quebrar Swagger e actuator).
+Os controllers mapeiam `/api/v1/...` diretamente (sem `server.servlet.context-path`, para não quebrar Swagger e actuator). O CRUD de equipamentos está escrito; falta validar seu funcionamento.
 
 | Recurso | Endpoints |
 |---|---|
-| Equipamentos | `GET /equipamentos` (filtros + paginação), `POST`, `GET /{id}`, `PUT /{id}`, `DELETE /{id}` (inativa), `GET /{id}/resumo` |
+| Equipamentos | `GET /equipamentos` (filtros + paginação), `POST`, `GET /{id}`, `PUT /{id}`, `DELETE /{id}` (inativa) — implementados, ainda não validados; `GET /{id}/resumo` planejado |
 | Planos | `GET /planos?equipamentoId=`, `POST`, `PUT /{id}`, `PATCH /{id}/status` |
 | Leituras | `POST /equipamentos/{id}/leituras`, `GET /equipamentos/{id}/leituras?de=&ate=` (a listagem global usa filtros próprios) |
 | Manutenções | `GET /manutencoes?status=&equipamentoId=`, `POST` (agendar/registrar), `PUT /{id}`, `POST /{id}/concluir`, `POST /{id}/cancelar` |
@@ -327,9 +341,9 @@ Rotas: `/` (Painel), `/equipamentos`, `/equipamentos/novo`, `/equipamentos/:id/e
 
 | Fase | Conteúdo | Status |
 |---|---|---|
-| 0. Setup | Repo, Docker, esqueletos, Flyway V1 | **Concluída** (restam 4 pendências pequenas, seção 4) |
+| 0. Setup | Repo, Docker, esqueletos, Flyway V1 | **Concluída** segundo confirmação do usuário; conferir pendências históricas antes de retomá-las |
 | Planejamento restante | Tabela de casos de teste, Figma, cenários do seed | A fazer |
-| 1. Backend base | CRUD de equipamentos e planos, `ProblemDetail`, Swagger | **Próximo passo** |
+| 1. Backend base | CRUD de equipamentos e planos, `ProblemDetail`, Swagger | CRUD de equipamentos escrito (validar); planos e tratamento global ainda pendentes |
 | 2. Regras | Leituras, cálculo de status, alertas, manutenções, dashboard, testes unitários e de integração (Testcontainers), seed `V2__seed_demo.sql` | A fazer |
 | 3. Frontend | Layout, componentes compartilhados, telas de cadastro, depois Painel e fluxos de leitura/manutenção | A fazer |
 | 4. Acabamento | Responsividade, acessibilidade, revisão de código, teste do compose do zero (`down -v`) | A fazer |
@@ -338,10 +352,10 @@ Rotas: `/` (Painel), `/equipamentos`, `/equipamentos/novo`, `/equipamentos/:id/e
 ### Checklist detalhado por fase
 
 **Fase 1 (backend base)**
-- [ ] Estrutura de pacotes por feature
+- [x] Estrutura de pacotes por feature (iniciada com `equipamento`)
 - [ ] `shared`: handler global de erros (`ProblemDetail`) e exceções de domínio
-- [ ] Equipamento: entidade (com `@Version`), enums, repository, DTOs `record`, service, controller
-- [ ] Equipamento: filtros + paginação, inativação, TAG duplicada → 409
+- [x] Equipamento: entidade (com `@Version`), enums, repository, DTOs `record`, service, controller — escrito, ainda não validado
+- [x] Equipamento: filtros + paginação, inativação, TAG duplicada → 409 — escrito, ainda não validado
 - [ ] Plano: CRUD, cálculo de `proximo_vencimento`, ativar/desativar
 - [ ] Conferir que o `validate` passa com as entidades
 - [ ] Testar pelo Swagger; commit por feature
