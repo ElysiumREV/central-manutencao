@@ -1,7 +1,7 @@
 # Contexto do projeto: Central de Monitoramento de Manutenção Preventiva por Horímetro
 
 > Documento de passagem de contexto. Se você é um LLM assumindo a conversa, leia tudo antes de responder.
-> Última atualização: 03/11/2026. Estado atual: base funcionando; CRUD de equipamentos escrito e aguardando compilação e validação manual. Próximo passo: executar essa validação e corrigir eventuais problemas antes de iniciar planos.
+> Última atualização: 03/11/2026. Estado atual: backend de equipamentos, planos, leituras, manutenções, alertas e dashboard compila. Próximo passo: reconstruir a API e exercitar as consultas de alertas e resumo no Swagger.
 
 ---
 
@@ -75,6 +75,15 @@ Pacote base provável: `com.elysium.central.manutencao` (classe principal `Centr
 - O usuário confirmou que a base (`docker compose up --build`) está funcionando.
 - O usuário atualizou o springdoc para a série 3.x, adequada ao Spring Boot 4; conferir o `pom.xml` real antes de assumir versão específica.
 - Em 03/11, ao investigar o Swagger, foi identificada a versão 3.0.0 no `pom.xml`. Atualizada para 3.2.0, versão cujo projeto declara alinhamento com Spring Boot 4.1.2. A hipótese é que a geração OpenAPI falhava mesmo com os endpoints REST respondendo; aguarda rebuild e validação pelo usuário. Referências: [releases springdoc](https://github.com/springdoc/springdoc-openapi/releases) e [issue de compatibilidade 3.0.0/Jackson](https://github.com/springdoc/springdoc-openapi/issues/3157).
+- Após a atualização, o usuário confirmou que o Swagger está funcionando e lista as ações da controller de equipamentos. Isso confirma a geração do contrato OpenAPI e a renderização da UI; cada operação ainda precisa ser exercitada individualmente.
+- O usuário informou que percorreu as operações de equipamentos no Swagger. O `DELETE /api/v1/equipamentos/{id}` é exclusão lógica: muda `status` para `INATIVO` e responde `204 No Content`; verificar por `GET /api/v1/equipamentos/{id}`. O registro permanece no banco para preservar histórico e relacionamentos.
+- O usuário iniciou a feature de manutenção criando `Manutencao.java` e `ManutencaoController.java`. Rascunho ainda incompleto: entidade tem divergências do schema (`equipamento_id`/`plano_id` como campos gerados, colunas nullable/unique incorretas, tipo/status como `String`); controller tem rota singular, método `listar` incompleto e dependências DTO/Service ainda não criadas. Revisar junto ao usuário antes de continuar; explicar enumerações, chaves estrangeiras e campos opcionais/condicionais.
+- Depois, por decisão de acelerar a implementação, backend de planos e manutenções foi completado no código. Planos: `POST/GET/GET por id/PUT/PATCH status`, validação de intervalo e antecedência, horímetro de execução não superior ao atual, vencimento calculado e status derivado. Manutenções: `POST` agendar, `POST /concluidas` registrar execução imediata, consultas paginadas, concluir e cancelar. Preventiva exige plano; equipamento/plano são validados; conclusão preventiva atualiza horímetro da última execução e vencimento dentro da mesma transação.
+- Os rascunhos de `Manutencao.java` e `ManutencaoController.java` foram substituídos por implementação alinhada ao schema. `./mvnw -DskipTests compile` compilou 28 arquivos Java com sucesso (03/11); testes não foram executados. **Ainda falta validar o mapeamento Hibernate ao iniciar com PostgreSQL e exercitar endpoints/regras pelo Swagger.**
+- O usuário informou que refez o `docker compose up` com os serviços e que parecem estar funcionando. Registrar como inicialização confirmada segundo o usuário; a validação do Hibernate se aplica se a imagem do backend foi reconstruída com as entidades novas. Operações de plano/manutenção ainda precisam ser exercitadas.
+- Feature de leituras implementada: `POST /api/v1/equipamentos/{id}/leituras`, histórico global `GET /api/v1/leituras` e por equipamento `GET /api/v1/equipamentos/{id}/leituras`, com filtro de período/paginação. Atualiza horímetro e data da última leitura na transação que insere o histórico; valida horímetro não decrescente, data não futura e equipamento não inativo; `@Version` trata concorrência. `./mvnw -DskipTests compile` compilou 34 arquivos Java com sucesso (03/11). Testes não executados; ainda validar inicialização e comportamento pelo Swagger.
+- Revisão estática das features (03/11): mapeamentos e constraints foram comparados com a V1; removida consulta de leitura não usada, nome do path variable ficou explícito e o agendamento passou a verificar duplicidade antes de salvar, mantendo a proteção do índice único parcial contra concorrência. Compilação após os ajustes passou (`./mvnw -DskipTests compile`, 34 arquivos). O usuário relata ter testado as operações pelo Swagger; não foi possível consultar `localhost:8080` a partir do ambiente do agente, então essa validação manual fica registrada como informada pelo usuário.
+- Alertas e dashboard implementados (03/11): `GET /api/v1/alertas` retorna planos ativos em atraso ou dentro da antecedência, com filtro opcional de nível (`VENCIDA`/`PROXIMA`), tipo de equipamento e busca textual; ordena pelo menor número de horas restantes. `GET /api/v1/dashboard/resumo` retorna contadores de status, cinco alertas vencidos mais críticos e até cinco manutenções agendadas para os próximos sete dias (datas calculadas no fuso `America/Sao_Paulo`). O status é calculado em `PlanoManutencao` e reutilizado para evitar regra duplicada. Compilação passou (`./mvnw -DskipTests compile`, 42 arquivos); testes não executados. **Ainda precisa inicializar com PostgreSQL para validar queries JPQL e exercitar filtros/contadores pelo Swagger.**
 - CRUD de equipamentos implementado no pacote `backend/src/main/java/com/elysium/central/manutencao/equipamento/`.
 - Endpoints escritos: `POST /api/v1/equipamentos`, `GET /api/v1/equipamentos` com filtros/paginação, `GET /{id}`, `PUT /{id}` e `DELETE /{id}` para inativar.
 - Regras cobertas no código: horímetro inicial apenas no cadastro; atualização cadastral não altera horímetro; validação dos campos por Bean Validation; código duplicado retorna conflito; exclusão é lógica; `@Version` mapeia o lock otimista.
@@ -311,11 +320,11 @@ Os controllers mapeiam `/api/v1/...` diretamente (sem `server.servlet.context-pa
 | Recurso | Endpoints |
 |---|---|
 | Equipamentos | `GET /equipamentos` (filtros + paginação), `POST`, `GET /{id}`, `PUT /{id}`, `DELETE /{id}` (inativa) — implementados, ainda não validados; `GET /{id}/resumo` planejado |
-| Planos | `GET /planos?equipamentoId=`, `POST`, `PUT /{id}`, `PATCH /{id}/status` |
-| Leituras | `POST /equipamentos/{id}/leituras`, `GET /equipamentos/{id}/leituras?de=&ate=` (a listagem global usa filtros próprios) |
-| Manutenções | `GET /manutencoes?status=&equipamentoId=`, `POST` (agendar/registrar), `PUT /{id}`, `POST /{id}/concluir`, `POST /{id}/cancelar` |
-| Alertas | `GET /alertas?nivel=VENCIDA\|PROXIMA` |
-| Dashboard | `GET /dashboard/resumo` (contadores, top críticos, próximas agendadas) |
+| Planos | `GET /planos?equipamentoId=&ativo=`, `POST`, `GET /{id}`, `PUT /{id}`, `PATCH /{id}/status` — escritos, ainda não validados |
+| Leituras | `POST /equipamentos/{id}/leituras`, `GET /equipamentos/{id}/leituras?de=&ate=`, `GET /leituras?equipamentoId=&de=&ate=` — escritos e compilados; validar |
+| Manutenções | `GET /manutencoes?status=&equipamentoId=`, `GET /{id}`, `POST` (agendar), `POST /concluidas` (registrar execução), `POST /{id}/concluir`, `POST /{id}/cancelar` — escritos, ainda não validados |
+| Alertas | `GET /alertas?nivel=VENCIDA\|PROXIMA&tipo=&termo=` — escrito e compilado; validar no Swagger |
+| Dashboard | `GET /dashboard/resumo` (contadores, top críticos, próximas agendadas) — escrito e compilado; validar no Swagger |
 
 **Erros:** `ProblemDetail` (RFC 7807), com erros de validação por campo. Códigos: 400 (validação), 404 (não encontrado), 409 (conflito: TAG duplicada, agendamento duplicado, lock otimista), 422 (regra de negócio).
 
@@ -343,8 +352,8 @@ Rotas: `/` (Painel), `/equipamentos`, `/equipamentos/novo`, `/equipamentos/:id/e
 |---|---|---|
 | 0. Setup | Repo, Docker, esqueletos, Flyway V1 | **Concluída** segundo confirmação do usuário; conferir pendências históricas antes de retomá-las |
 | Planejamento restante | Tabela de casos de teste, Figma, cenários do seed | A fazer |
-| 1. Backend base | CRUD de equipamentos e planos, `ProblemDetail`, Swagger | CRUD de equipamentos escrito (validar); planos e tratamento global ainda pendentes |
-| 2. Regras | Leituras, cálculo de status, alertas, manutenções, dashboard, testes unitários e de integração (Testcontainers), seed `V2__seed_demo.sql` | A fazer |
+| 1. Backend base | CRUD de equipamentos e planos, `ProblemDetail`, Swagger | Equipamentos, planos, leituras e manutenção escritos e compilando; validar com banco e pelo Swagger; tratamento global pendente |
+| 2. Regras | Leituras, alertas, dashboard, testes unitários e de integração (Testcontainers), seed `V2__seed_demo.sql` | Leituras, alertas e dashboard escritos/compilados; validar funcionalmente; testes e seed pendentes; manutenção compilada, validar |
 | 3. Frontend | Layout, componentes compartilhados, telas de cadastro, depois Painel e fluxos de leitura/manutenção | A fazer |
 | 4. Acabamento | Responsividade, acessibilidade, revisão de código, teste do compose do zero (`down -v`) | A fazer |
 | 5. Entregáveis | README completo, vídeo, revisão do histórico Git, clonar em pasta limpa e seguir o README | A fazer |
@@ -356,15 +365,15 @@ Rotas: `/` (Painel), `/equipamentos`, `/equipamentos/novo`, `/equipamentos/:id/e
 - [ ] `shared`: handler global de erros (`ProblemDetail`) e exceções de domínio
 - [x] Equipamento: entidade (com `@Version`), enums, repository, DTOs `record`, service, controller — escrito, ainda não validado
 - [x] Equipamento: filtros + paginação, inativação, TAG duplicada → 409 — escrito, ainda não validado
-- [ ] Plano: CRUD, cálculo de `proximo_vencimento`, ativar/desativar
+- [x] Plano: CRUD, cálculo de `proximo_vencimento`, ativar/desativar — escrito e compilado; validar com banco/Swagger
 - [ ] Conferir que o `validate` passa com as entidades
 - [ ] Testar pelo Swagger; commit por feature
 
 **Fase 2 (regras)**
 - [ ] Cálculo de status isolado em classe própria, fácil de testar
-- [ ] Leitura com validações e atualização transacional do equipamento
-- [ ] Manutenção: agendar, registrar já realizada, concluir (recalcula plano), cancelar, bloqueio de duplicidade
-- [ ] Alertas (vencidos/próximos, ordenados por atraso) e endpoint do dashboard
+- [x] Leitura com validações e atualização transacional do equipamento — escrita e compilada; validar pelo Swagger
+- [x] Manutenção: agendar, registrar já realizada, concluir (recalcula plano), cancelar, bloqueio de duplicidade — escrito e compilado; validar com banco/Swagger
+- [x] Alertas (vencidos/próximos, ordenados por atraso) e endpoint do dashboard — escritos e compilados; validar no Swagger
 - [ ] Testes unitários (tabela de casos → JUnit) e de integração (Testcontainers)
 - [ ] Seed com 10–15 equipamentos cobrindo vencida, próxima e em dia, desenhado para a história do vídeo (sem informar `id`, que é `GENERATED ALWAYS`)
 
