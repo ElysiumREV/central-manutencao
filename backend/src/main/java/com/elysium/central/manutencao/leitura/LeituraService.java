@@ -36,6 +36,11 @@ public class LeituraService {
             throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_ENTITY,
                     "A data da leitura não pode estar no futuro.");
         }
+        if (equipamento.getDataUltimaLeitura() != null
+                && request.dataHora().isBefore(equipamento.getDataUltimaLeitura())) {
+            throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_ENTITY,
+                    "A data da leitura não pode ser anterior à última leitura registrada.");
+        }
         if (request.valor().compareTo(equipamento.getHorimetroAtual()) < 0) {
             throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_ENTITY,
                     "O valor da leitura não pode ser menor que o horímetro atual.");
