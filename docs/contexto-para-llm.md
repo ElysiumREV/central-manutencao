@@ -1,7 +1,7 @@
 # Contexto do projeto: Central de Monitoramento de Manutenção Preventiva por Horímetro
 
 > Documento de passagem de contexto. Se você é um LLM assumindo a conversa, leia tudo antes de responder.
-> Última atualização: 04/11/2026. Estado atual: backend principal implementado e compilado; correções de leitura retroativa e ordenação de alertas feitas; base visual do frontend com dashboard inicial também implementada e compilada. Próximo passo: reconstruir/executar localmente e validar a tela com a API.
+> Última atualização: 04/11/2026. Estado atual: backend e telas operacionais implementados; edição do plano preserva a última execução; autenticação HTTP Basic implementada; 12 testes de regra e integração passam. Próximos focos: README, seed demonstrativo, validação do fluxo completo e vídeo.
 
 ---
 
@@ -50,8 +50,9 @@
 | Migrations | Flyway |
 | API docs | springdoc-openapi **3.x** (série para Boot 4; a 2.8.x é para Boot 3) |
 | Actuator | health, info |
+| Segurança | Spring Security HTTP Basic, usuário de demonstração em memória e credenciais configuráveis por ambiente |
 | Frontend | React + Vite + TypeScript |
-| Libs do frontend | React Router, TanStack Query, React Hook Form + Zod, MUI, Vitest + React Testing Library, openapi-typescript |
+| Libs do frontend | React Router, TanStack Query e MUI em uso; React Hook Form, Zod, Vitest/Testing Library e openapi-typescript estão instalados, mas ainda não são usados nas telas |
 | Infra | Docker Compose (db + api + web), nginx servindo o frontend e fazendo proxy de `/api` |
 
 ### ⚠️ Atenção: o projeto está no Spring Boot 4, não no 3
@@ -355,8 +356,8 @@ Rotas planejadas: `/` (Painel), `/equipamentos`, `/equipamentos/:id` (detalhe co
 |---|---|---|
 | 0. Setup | Repo, Docker, esqueletos, Flyway V1 | **Concluída** segundo confirmação do usuário; conferir pendências históricas antes de retomá-las |
 | Planejamento restante | Tabela de casos de teste, Figma, cenários do seed | A fazer |
-| 1. Backend base | CRUD de equipamentos e planos, `ProblemDetail`, Swagger | Equipamentos, planos, leituras e manutenção escritos e compilando; validar com banco e pelo Swagger; tratamento global pendente |
-| 2. Regras | Leituras, alertas, dashboard, testes unitários e de integração (Testcontainers), seed `V2__seed_demo.sql` | Leituras, alertas e dashboard escritos/compilados; validar funcionalmente; testes e seed pendentes; manutenção compilada, validar |
+| 1. Backend base | CRUD de equipamentos e planos, `ProblemDetail`, Swagger e autenticação | Equipamentos, planos, leituras e manutenção compilam; autenticação HTTP Basic implementada; tratamento global pendente |
+| 2. Regras | Leituras, alertas, dashboard, testes unitários e de integração (Testcontainers), seed `V2__seed_demo.sql` | Regras implementadas; 12 testes unitários/de integração passam com PostgreSQL 16 no Testcontainers; seed pendente |
 | 3. Frontend | Layout, telas operacionais, integração e estados de interface | Painel, equipamentos, planos, leituras e manutenções implementados; ainda falta detalhe do equipamento, ações integradas do Painel e validação visual/integrada |
 | 4. Acabamento | Responsividade, acessibilidade, revisão de código, teste do compose do zero (`down -v`) | A fazer |
 | 5. Entregáveis | README completo, vídeo, revisão do histórico Git, clonar em pasta limpa e seguir o README | A fazer |
@@ -377,7 +378,7 @@ Rotas planejadas: `/` (Painel), `/equipamentos`, `/equipamentos/:id` (detalhe co
 - [x] Leitura com validações e atualização transacional do equipamento — escrita e compilada; validar pelo Swagger
 - [x] Manutenção: agendar, registrar já realizada, concluir (recalcula plano), cancelar, bloqueio de duplicidade — escrito e compilado; validar com banco/Swagger
 - [x] Alertas (vencidos/próximos, ordenados por atraso) e endpoint do dashboard — escritos e compilados; validar no Swagger
-- [ ] Testes unitários (tabela de casos → JUnit) e de integração (Testcontainers)
+- [x] Testes unitários (limites de status e ciclo do plano) e de integração (atualização do plano, conclusão preventiva, duplicidade e leituras inválidas) — 12 passaram
 - [ ] Seed com 10–15 equipamentos cobrindo vencida, próxima e em dia, desenhado para a história do vídeo (sem informar `id`, que é `GENERATED ALWAYS`)
 
 **Fase 3 (frontend)**
@@ -392,7 +393,7 @@ Rotas planejadas: `/` (Painel), `/equipamentos`, `/equipamentos/:id` (detalhe co
 - [ ] Revisão de acessibilidade/responsividade e testes de componentes críticos
 
 **Fase 5 (entregáveis)**
-- [ ] README: visão geral, screenshots, diagrama de arquitetura, pré-requisitos (Docker, ou JDK 21 + Node 20+), execução rápida e manual, regras de negócio, testes, decisões, melhorias futuras (autenticação JWT, notificações por e-mail, previsão por média de uso, deploy)
+- [ ] README: visão geral, screenshots, diagrama de arquitetura, pré-requisitos (Docker, ou JDK 21 + Node 20+), execução rápida e manual, credenciais locais de demonstração, regras de negócio, testes, decisões, melhorias futuras (gestão persistente de usuários, autorização por função, notificações por e-mail, previsão por média de uso, deploy)
 - [ ] Roteiro do vídeo (≤ 5 min): problema e visão geral (0:00–0:30) → painel de alertas (–1:30) → cadastro de equipamento e plano (–2:30) → registrar leitura e ver o alerta mudar (–3:30) → agendar e concluir manutenção com novo vencimento (–4:15) → arquitetura, Swagger, testes e decisões (–5:00). Gravar com o seed carregado.
 
 ---
@@ -440,11 +441,35 @@ A rota `/equipamentos` deixou de ser placeholder. Ela consome a API real e ofere
 
 ### Atualização de 2026-11-04 — tela de planos
 
-A rota `/planos` agora lista planos com filtro por equipamento e ativo/inativo, mostra intervalo, horímetro de vencimento e status calculados pela API, e permite criar, editar e ativar/desativar. Ao criar, o horímetro da última execução é preenchido com o horímetro atual do equipamento escolhido; continua editável para representar planos cujo último serviço aconteceu antes do cadastro. A tela invalida consultas de planos e o resumo do dashboard após alterações, para refletir os novos dados.
+A rota `/planos` lista planos com filtro por equipamento e ativo/inativo, mostra intervalo, horímetro de vencimento e status calculados pela API, e permite criar, editar e ativar/desativar. Ao criar, o horímetro da última execução é preenchido com o horímetro atual do equipamento escolhido e pode ser ajustado para representar um ciclo iniciado antes do cadastro. Em edição, esse valor é apenas informativo: muda pelo fluxo de conclusão de manutenção preventiva. A tela invalida consultas de planos e o resumo do dashboard após alterações.
 
 **Motivo:** a regra do próximo vencimento e o status pertencem ao domínio do backend; o frontend apenas exibe o resultado para manter uma fonte única de verdade. O plano está ligado a um equipamento desde sua criação, então a seleção é obrigatória e não muda na edição.
 
 **Verificação feita:** `cd frontend && npm run build` concluiu com sucesso após integrar as rotas `/equipamentos` e `/planos`.
+
+### Correção de 2026-11-04 — atualização segura do plano
+
+A atualização comum (`PUT /api/v1/planos/{id}`) não aceita mais `horimetroUltimaExecucao`. O Service valida os campos de configuração usando o horímetro já persistido e chama `atualizarConfiguracao`; essa operação recalcula o próximo vencimento a partir do último horímetro registrado, sem alterar a execução. A entidade agora reserva a alteração desse valor a `registrarExecucao`, chamada quando uma manutenção preventiva é concluída. No formulário, o campo só é editável na criação; na edição, a tela informa o valor atual e que ele muda ao concluir a manutenção.
+
+**Motivo:** permitir editar a última execução poderia deslocar artificialmente o próximo vencimento sem que um serviço tivesse ocorrido. A configuração do plano (nome, intervalo, antecedência e ativo) é separada do histórico operacional (execução e horímetro).
+
+**Verificação feita:** `./mvnw -o clean compile` e `cd frontend && npm run build` passaram. API e frontend foram reconstruídos no Docker; API e banco ficaram saudáveis, e `GET /api/v1/planos?...` retornou HTTP 200 pelo proxy do Nginx. O banco manteve os registros existentes. A preservação do horímetro na atualização está coberta por teste de integração.
+
+### Autenticação de acesso — 2026-11-04
+
+Foi adicionada autenticação HTTP Basic com Spring Security. Todas as rotas da API exigem usuário e senha; `/actuator/health` e os recursos da documentação Swagger ficam públicos, mas as chamadas de negócio feitas pelo Swagger também exigem credenciais. `GET /api/v1/auth/session` retorna o nome do usuário autenticado e é usado pela tela de login do frontend. As credenciais vêm de `APP_AUTH_USERNAME` e `APP_AUTH_PASSWORD`; o usuário fica em memória e a senha é codificada com `PasswordEncoder` antes de ser cadastrada no `UserDetailsService`.
+
+O frontend oferece formulário de login e ação de sair. O cabeçalho Basic fica apenas em memória JavaScript e é anexado pelo cliente HTTP compartilhado; ao recarregar a página, o usuário entra novamente. A API é stateless, sem sessão/cookie, por isso o CSRF fica desabilitado nesta configuração. No Docker há credenciais locais de demonstração substituíveis pelas variáveis de ambiente; não usar os valores demonstrativos fora do ambiente local.
+
+**Limites assumidos:** existe um único usuário operador em memória, sem cadastro, recuperação de senha, persistência de usuários ou autorização por função. O Docker local usa HTTP; Basic apenas codifica (não criptografa) as credenciais no transporte, então qualquer implantação externa exige HTTPS e credenciais próprias. Essa implementação atende ao controle de acesso do protótipo, não é uma solução de identidade para produção.
+
+**Verificação feita:** compilação limpa do backend, build de produção do frontend e rebuild Docker de API/web. Sem credenciais, `GET /api/v1/dashboard/resumo` retorna 401; `GET /api/v1/auth/session` autenticado retorna 200 tanto direto na API quanto pelo proxy Nginx; healthcheck público retorna 200. O JSON OpenAPI inclui o esquema `basicAuth` para autenticar chamadas no Swagger.
+
+### Testes de regras de negócio — 2026-11-04
+
+Foram adicionados seis testes unitários de `PlanoManutencao` cobrindo os limites `EM_DIA`/`PROXIMA`/`VENCIDA`, preservação da última execução ao atualizar configuração e avanço do ciclo ao registrar execução. Cinco testes de integração com PostgreSQL 16 via Testcontainers cobrem atualização do plano preservando o horímetro, conclusão preventiva recalculando o vencimento, conflito de agendamento duplicado e rejeição de leituras retroativas/regressivas. As credenciais de teste são propriedades locais do contexto de teste.
+
+**Verificação feita:** `./mvnw clean test` terminou com BUILD SUCCESS: 12 testes, zero falhas, zero erros. O container do Testcontainers usa `postgres:16-alpine`, alinhado ao banco do Compose.
 
 ### Atualização de 2026-11-04 — leituras e manutenções
 
