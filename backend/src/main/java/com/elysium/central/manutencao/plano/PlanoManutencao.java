@@ -57,22 +57,26 @@ public class PlanoManutencao {
     public PlanoManutencao(Equipamento equipamento, String nome, BigDecimal intervaloHoras,
             BigDecimal antecedenciaAlertaHoras, BigDecimal horimetroUltimaExecucao, boolean ativo) {
         this.equipamento = equipamento;
-        atualizarDados(nome, intervaloHoras, antecedenciaAlertaHoras, horimetroUltimaExecucao, ativo);
+        this.horimetroUltimaExecucao = horimetroUltimaExecucao;
+        atualizarConfiguracao(nome, intervaloHoras, antecedenciaAlertaHoras, ativo);
     }
 
-    public void atualizarDados(String nome, BigDecimal intervaloHoras,
-            BigDecimal antecedenciaAlertaHoras, BigDecimal horimetroUltimaExecucao, boolean ativo) {
+    public void atualizarConfiguracao(String nome, BigDecimal intervaloHoras,
+            BigDecimal antecedenciaAlertaHoras, boolean ativo) {
         this.nome = nome;
         this.intervaloHoras = intervaloHoras;
         this.antecedenciaAlertaHoras = antecedenciaAlertaHoras;
-        this.horimetroUltimaExecucao = horimetroUltimaExecucao;
-        this.proximoVencimento = horimetroUltimaExecucao.add(intervaloHoras);
         this.ativo = ativo;
+        recalcularProximoVencimento();
     }
 
     public void registrarExecucao(BigDecimal horimetroExecucao) {
         this.horimetroUltimaExecucao = horimetroExecucao;
-        this.proximoVencimento = horimetroExecucao.add(intervaloHoras);
+        recalcularProximoVencimento();
+    }
+
+    private void recalcularProximoVencimento() {
+        this.proximoVencimento = horimetroUltimaExecucao.add(intervaloHoras);
     }
 
     public BigDecimal calcularHorasRestantes() {

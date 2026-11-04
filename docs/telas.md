@@ -75,9 +75,9 @@ Documento de referência para wireframes (Figma) e backlog do frontend.
   - Nome
   - Intervalo (h, > 0)
   - Antecedência de alerta (h, ≥ 0 e menor que o intervalo)
-  - Horímetro da última execução (≤ horímetro atual)
+  - Na criação: horímetro inicial do ciclo (≤ horímetro atual). Na edição: exibir o horímetro registrado como somente leitura; somente concluir uma manutenção preventiva atualiza esse valor.
   - Ativo
-- **Apoio ao vivo:** texto "Próximo vencimento: **1.500 h**" enquanto o usuário digita.
+- **Apoio ao vivo:** texto "Próximo vencimento: **1.500 h**" enquanto o usuário digita o intervalo e o horímetro inicial (apenas na criação).
 - **Decisão:** planos são criados dentro do detalhe do equipamento; a tela global serve para consulta e edição rápida.
 
 ## 6. Leituras

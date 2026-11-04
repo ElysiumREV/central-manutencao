@@ -47,6 +47,8 @@
 .plans-modal input:not([type=checkbox]), .plans-modal select { width: 100%; height: 37px; padding: 0 9px; border: 1px solid #dce3e9; border-radius: 6px; outline: 0; color: #344b5e; background: #fff; font: inherit; font-size: 11px; font-weight: 400; }
 .plans-modal input:focus, .plans-modal select:focus { border-color: #5c9b8c; box-shadow: 0 0 0 3px rgba(40,123,107,.1); }
 .plans-form-grid { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 0 12px; }
+.plans-baseline { align-self: center; margin: 0 0 13px; padding: 9px 10px; border-radius: 6px; color: #687b89; background: #f5f8f7; font-size: 10px; line-height: 1.5; }
+.plans-baseline strong { color: #287b6b; }
 .plans-checkbox { flex-direction: row !important; align-items: center; }
 .plans-form-error { margin: 12px 0 0; padding: 9px 10px; border-radius: 6px; color: #a23e3e; background: #fbefef; font-size: 11px; }
 .plans-modal form footer { margin-top: 20px; display: flex; justify-content: flex-end; gap: 8px; }

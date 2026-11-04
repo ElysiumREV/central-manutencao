@@ -46,16 +46,16 @@ public class PlanoService {
     public PlanoResponse atualizar(Long id, AtualizarPlanoRequest request) {
         PlanoManutencao plano = obterPlano(id);
         validarValores(request.intervaloHoras(), request.antecedenciaAlertaHoras(),
-                request.horimetroUltimaExecucao(), plano.getEquipamento());
-        plano.atualizarDados(request.nome().trim(), request.intervaloHoras(),
-                request.antecedenciaAlertaHoras(), request.horimetroUltimaExecucao(), request.ativo());
+                plano.getHorimetroUltimaExecucao(), plano.getEquipamento());
+        plano.atualizarConfiguracao(request.nome().trim(), request.intervaloHoras(),
+                request.antecedenciaAlertaHoras(), request.ativo());
         return PlanoResponse.de(planoRepository.saveAndFlush(plano));
     }
 
     public PlanoResponse alterarStatus(Long id, boolean ativo) {
         PlanoManutencao plano = obterPlano(id);
-        plano.atualizarDados(plano.getNome(), plano.getIntervaloHoras(),
-                plano.getAntecedenciaAlertaHoras(), plano.getHorimetroUltimaExecucao(), ativo);
+        plano.atualizarConfiguracao(plano.getNome(), plano.getIntervaloHoras(),
+                plano.getAntecedenciaAlertaHoras(), ativo);
         return PlanoResponse.de(planoRepository.saveAndFlush(plano));
     }
 

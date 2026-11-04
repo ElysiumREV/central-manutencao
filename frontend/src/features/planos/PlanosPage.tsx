@@ -37,10 +37,10 @@ export default function PlanosPage() {
   })
   const salvar = useMutation({
     mutationFn: () => {
-      const dados = { nome: form.nome, intervaloHoras: Number(form.intervaloHoras), antecedenciaAlertaHoras: Number(form.antecedenciaAlertaHoras), horimetroUltimaExecucao: Number(form.horimetroUltimaExecucao), ativo: form.ativo }
+      const dados = { nome: form.nome, intervaloHoras: Number(form.intervaloHoras), antecedenciaAlertaHoras: Number(form.antecedenciaAlertaHoras), ativo: form.ativo }
       return editando
         ? api.put<Plano>(`/api/v1/planos/${editando.id}`, dados)
-        : api.post<Plano>('/api/v1/planos', { ...dados, equipamentoId: Number(form.equipamentoId) })
+        : api.post<Plano>('/api/v1/planos', { ...dados, equipamentoId: Number(form.equipamentoId), horimetroUltimaExecucao: Number(form.horimetroUltimaExecucao) })
     },
     onSuccess: async () => { await client.invalidateQueries({ queryKey: ['planos'] }); await client.invalidateQueries({ queryKey: ['dashboard-resumo'] }); fechar() },
   })
@@ -81,7 +81,7 @@ export default function PlanosPage() {
       <p>O status de vencimento é calculado com base no horímetro atual do equipamento.</p>
       <label>Equipamento<select required disabled={Boolean(editando)} value={form.equipamentoId} onChange={e => { const id = e.target.value; const equipamento = equipamentos.find(item => item.id === Number(id)); setForm({ ...form, equipamentoId: id, horimetroUltimaExecucao: equipamento ? String(equipamento.horimetroAtual) : '' }) }}><option value="">Selecione um equipamento</option>{equipamentos.filter(e => e.status !== 'INATIVO').map(e => <option key={e.id} value={e.id}>{e.codigo} · {e.nome} ({horas(e.horimetroAtual)})</option>)}</select></label>
       <label>Nome do plano<input required maxLength={120} value={form.nome} onChange={e => setForm({ ...form, nome: e.target.value })} placeholder="Ex.: Troca de óleo do motor" /></label>
-      <div className="plans-form-grid"><label>Intervalo (horas)<input required type="number" min="0.1" step="0.1" value={form.intervaloHoras} onChange={e => setForm({ ...form, intervaloHoras: e.target.value })} /></label><label>Antecedência do alerta (h)<input required type="number" min="0" step="0.1" value={form.antecedenciaAlertaHoras} onChange={e => setForm({ ...form, antecedenciaAlertaHoras: e.target.value })} /></label><label>Horímetro da última execução<input required type="number" min="0" step="0.1" value={form.horimetroUltimaExecucao} onChange={e => setForm({ ...form, horimetroUltimaExecucao: e.target.value })} /></label></div>
+      <div className="plans-form-grid"><label>Intervalo (horas)<input required type="number" min="0.1" step="0.1" value={form.intervaloHoras} onChange={e => setForm({ ...form, intervaloHoras: e.target.value })} /></label><label>Antecedência do alerta (h)<input required type="number" min="0" step="0.1" value={form.antecedenciaAlertaHoras} onChange={e => setForm({ ...form, antecedenciaAlertaHoras: e.target.value })} /></label>{editando ? <p className="plans-baseline">Última execução: <strong>{horas(editando.horimetroUltimaExecucao)}</strong>. Esse valor é atualizado ao concluir uma manutenção preventiva.</p> : <label>Horímetro da última execução<input required type="number" min="0" step="0.1" value={form.horimetroUltimaExecucao} onChange={e => setForm({ ...form, horimetroUltimaExecucao: e.target.value })} /></label>}</div>
       <label className="plans-checkbox"><input type="checkbox" checked={form.ativo} onChange={e => setForm({ ...form, ativo: e.target.checked })} /> Plano ativo</label>
       {salvar.isError && <p className="plans-form-error" role="alert">{salvar.error.message}</p>}<footer><button type="button" onClick={fechar}>Cancelar</button><button className="plans-primary" disabled={salvar.isPending} type="submit">{salvar.isPending ? 'Salvando…' : 'Salvar plano'}</button></footer>
     </form></section></div>}
