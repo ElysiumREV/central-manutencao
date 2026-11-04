@@ -1,5 +1,5 @@
-import { useState } from 'react'
-import { useQuery } from '@tanstack/react-query'
+import { useEffect, useState } from 'react'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { NavLink, Route, Routes, useLocation } from 'react-router-dom'
 import DashboardOutlined from '@mui/icons-material/DashboardOutlined'
 import Inventory2Outlined from '@mui/icons-material/Inventory2Outlined'
@@ -12,6 +12,9 @@ import RefreshRounded from '@mui/icons-material/RefreshRounded'
 import CalendarTodayOutlined from '@mui/icons-material/CalendarTodayOutlined'
 import ArrowForwardRounded from '@mui/icons-material/ArrowForwardRounded'
 import AccessTimeRounded from '@mui/icons-material/AccessTimeRounded'
+import LogoutOutlined from '@mui/icons-material/LogoutOutlined'
+import { api, limparCredenciais, possuiCredenciais } from './api/http'
+import LoginPage from './features/auth/LoginPage'
 import EquipamentosPage from './features/equipamentos/EquipamentosPage'
 import PlanosPage from './features/planos/PlanosPage'
 import LeiturasPage from './features/leituras/LeiturasPage'
@@ -61,18 +64,7 @@ interface DashboardResumo {
 }
 
 async function buscarResumo(): Promise<DashboardResumo> {
-  const response = await fetch('/api/v1/dashboard/resumo')
-  if (!response.ok) {
-    let mensagem = 'Não foi possível carregar o painel.'
-    try {
-      const problema = await response.json() as { detail?: string }
-      mensagem = problema.detail ?? mensagem
-    } catch {
-      // Usa a mensagem padrão se a API não retornar ProblemDetail em JSON.
-    }
-    throw new Error(mensagem)
-  }
-  return response.json() as Promise<DashboardResumo>
+  return api.get<DashboardResumo>('/api/v1/dashboard/resumo')
 }
 
 const navegacao = [
@@ -92,6 +84,36 @@ const titulos: Record<string, string> = {
 }
 
 function App() {
+  const queryClient = useQueryClient()
+  const [estadoAutenticacao, setEstadoAutenticacao] = useState<'verificando' | 'anonimo' | 'autenticado'>('verificando')
+
+  useEffect(() => {
+    let ativo = true
+    if (!possuiCredenciais()) {
+      setEstadoAutenticacao('anonimo')
+      return () => { ativo = false }
+    }
+    api.get<{ usuario: string }>('/api/v1/auth/session')
+      .then(() => { if (ativo) setEstadoAutenticacao('autenticado') })
+      .catch(() => {
+        limparCredenciais()
+        if (ativo) setEstadoAutenticacao('anonimo')
+      })
+    return () => { ativo = false }
+  }, [])
+
+  function sair() {
+    limparCredenciais()
+    queryClient.clear()
+    setEstadoAutenticacao('anonimo')
+  }
+
+  if (estadoAutenticacao === 'verificando') return <div className="auth-loading">Verificando acesso…</div>
+  if (estadoAutenticacao === 'anonimo') return <LoginPage aoAutenticar={() => setEstadoAutenticacao('autenticado')} />
+  return <AppShell aoSair={sair} />
+}
+
+function AppShell({ aoSair }: { aoSair: () => void }) {
   const [menuAberto, setMenuAberto] = useState(false)
   const location = useLocation()
   const titulo = titulos[location.pathname] ?? 'Central de manutenção'
@@ -145,6 +167,7 @@ function App() {
           <a className="api-link" href="http://localhost:8080/swagger-ui.html" target="_blank" rel="noreferrer">
             API <ArrowForwardRounded />
           </a>
+          <button className="logout-button" onClick={aoSair}><LogoutOutlined /> Sair</button>
         </header>
 
         <div className="page-content">

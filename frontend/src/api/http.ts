@@ -8,10 +8,33 @@ export class ApiError extends Error {
   }
 }
 
+let authorizationHeader: string | null = null
+
+function getAuthorizationHeader() {
+  return authorizationHeader
+}
+
+export function definirCredenciais(usuario: string, senha: string) {
+  const texto = `${usuario}:${senha}`
+  const bytes = new TextEncoder().encode(texto)
+  const binario = Array.from(bytes, byte => String.fromCharCode(byte)).join('')
+  authorizationHeader = `Basic ${btoa(binario)}`
+}
+
+export function limparCredenciais() {
+  authorizationHeader = null
+}
+
+export function possuiCredenciais() {
+  return getAuthorizationHeader() !== null
+}
+
 async function request<T>(path: string, options?: RequestInit): Promise<T> {
+  const authorization = getAuthorizationHeader()
   const response = await fetch(path, {
     ...options,
     headers: {
+      ...(authorization ? { Authorization: authorization } : {}),
       ...(options?.body ? { 'Content-Type': 'application/json' } : {}),
       ...options?.headers,
     },

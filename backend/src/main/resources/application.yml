@@ -29,6 +29,11 @@ server:
   error:
     include-message: never
 
+app:
+  security:
+    username: ${APP_AUTH_USERNAME}
+    password: ${APP_AUTH_PASSWORD}
+
 management:
   endpoints:
     web:

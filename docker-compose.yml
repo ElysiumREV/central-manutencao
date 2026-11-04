@@ -27,6 +27,8 @@ services:
       DB_URL: jdbc:postgresql://db:5432/${POSTGRES_DB:-manutencao}
       DB_USER: ${POSTGRES_USER:-manutencao}
       DB_PASSWORD: ${POSTGRES_PASSWORD:-manutencao}
+      APP_AUTH_USERNAME: ${APP_AUTH_USERNAME:-operador}
+      APP_AUTH_PASSWORD: ${APP_AUTH_PASSWORD:-local-demo-password-change-me}
     depends_on:
       db:
         condition: service_healthy
