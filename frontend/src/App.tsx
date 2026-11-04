@@ -1,122 +1,355 @@
 import { useState } from 'react'
-import heroImg from './assets/hero.png'
-import reactLogo from './assets/react.svg'
-import viteLogo from './assets/vite.svg'
+import { useQuery } from '@tanstack/react-query'
+import { NavLink, Route, Routes, useLocation } from 'react-router-dom'
+import DashboardOutlined from '@mui/icons-material/DashboardOutlined'
+import Inventory2Outlined from '@mui/icons-material/Inventory2Outlined'
+import AssignmentOutlined from '@mui/icons-material/AssignmentOutlined'
+import SpeedOutlined from '@mui/icons-material/SpeedOutlined'
+import BuildOutlined from '@mui/icons-material/BuildOutlined'
+import MenuRounded from '@mui/icons-material/MenuRounded'
+import CloseRounded from '@mui/icons-material/CloseRounded'
+import RefreshRounded from '@mui/icons-material/RefreshRounded'
+import CalendarTodayOutlined from '@mui/icons-material/CalendarTodayOutlined'
+import ArrowForwardRounded from '@mui/icons-material/ArrowForwardRounded'
+import AccessTimeRounded from '@mui/icons-material/AccessTimeRounded'
+import EquipamentosPage from './features/equipamentos/EquipamentosPage'
+import PlanosPage from './features/planos/PlanosPage'
+import LeiturasPage from './features/leituras/LeiturasPage'
+import ManutencoesPage from './features/manutencoes/ManutencoesPage'
 import './App.css'
 
+type NivelAlerta = 'VENCIDA' | 'PROXIMA' | 'EM_DIA'
+
+interface Alerta {
+  planoId: number
+  nomePlano: string
+  equipamentoId: number
+  codigoEquipamento: string
+  nomeEquipamento: string
+  tipoEquipamento: string
+  horimetroAtual: number
+  proximoVencimento: number
+  horasRestantes: number
+  status: NivelAlerta
+}
+
+interface ManutencaoAgendada {
+  id: number
+  equipamentoId: number
+  codigoEquipamento: string
+  nomeEquipamento: string
+  planoId: number | null
+  nomePlano: string | null
+  tipo: 'PREVENTIVA' | 'CORRETIVA'
+  status: 'AGENDADA' | 'CONCLUIDA' | 'CANCELADA'
+  dataAgendada: string | null
+  dataExecucao: string | null
+  horimetroExecucao: number | null
+  responsavel: string | null
+  observacoes: string | null
+  criadoEm: string
+  atualizadoEm: string
+}
+
+interface DashboardResumo {
+  planosVencidos: number
+  planosProximos: number
+  planosEmDia: number
+  manutencoesAgendadasProximosSeteDias: number
+  alertasCriticos: Alerta[]
+  proximasManutencoes: ManutencaoAgendada[]
+}
+
+async function buscarResumo(): Promise<DashboardResumo> {
+  const response = await fetch('/api/v1/dashboard/resumo')
+  if (!response.ok) {
+    let mensagem = 'Não foi possível carregar o painel.'
+    try {
+      const problema = await response.json() as { detail?: string }
+      mensagem = problema.detail ?? mensagem
+    } catch {
+      // Usa a mensagem padrão se a API não retornar ProblemDetail em JSON.
+    }
+    throw new Error(mensagem)
+  }
+  return response.json() as Promise<DashboardResumo>
+}
+
+const navegacao = [
+  { texto: 'Painel', rota: '/', icone: <DashboardOutlined /> },
+  { texto: 'Equipamentos', rota: '/equipamentos', icone: <Inventory2Outlined /> },
+  { texto: 'Planos', rota: '/planos', icone: <AssignmentOutlined /> },
+  { texto: 'Leituras', rota: '/leituras', icone: <SpeedOutlined /> },
+  { texto: 'Manutenções', rota: '/manutencoes', icone: <BuildOutlined /> },
+]
+
+const titulos: Record<string, string> = {
+  '/': 'Painel de monitoramento',
+  '/equipamentos': 'Equipamentos',
+  '/planos': 'Planos de manutenção',
+  '/leituras': 'Leituras de horímetro',
+  '/manutencoes': 'Manutenções',
+}
+
 function App() {
-  const [count, setCount] = useState(0)
+  const [menuAberto, setMenuAberto] = useState(false)
+  const location = useLocation()
+  const titulo = titulos[location.pathname] ?? 'Central de manutenção'
 
   return (
-    <>
-      <section id="center">
-        <div className="hero">
-          <img src={heroImg} className="base" width="170" height="179" alt="" />
-          <img src={reactLogo} className="framework" alt="React logo" />
-          <img src={viteLogo} className="vite" alt="Vite logo" />
+    <div className="app-shell">
+      {menuAberto && <button className="drawer-backdrop" aria-label="Fechar menu" onClick={() => setMenuAberto(false)} />}
+      <aside className={`sidebar ${menuAberto ? 'sidebar--open' : ''}`}>
+        <div className="brand">
+          <div className="brand-mark" aria-hidden="true">M</div>
+          <div>
+            <strong>Manutenção</strong>
+            <span>Central de monitoramento</span>
+          </div>
+          <button className="mobile-close icon-button" aria-label="Fechar menu" onClick={() => setMenuAberto(false)}>
+            <CloseRounded />
+          </button>
         </div>
-        <div>
-          <h1>Get started</h1>
-          <p>
-            Edit <code>src/App.tsx</code> and save to test <code>HMR</code>
-          </p>
-        </div>
-        <button
-          type="button"
-          className="counter"
-          onClick={() => setCount((count) => count + 1)}
-        >
-          Count is {count}
-        </button>
-      </section>
 
-      <div className="ticks"></div>
+        <span className="nav-caption">MENU PRINCIPAL</span>
+        <nav className="navigation" aria-label="Navegação principal">
+          {navegacao.map((item) => (
+            <NavLink
+              key={item.rota}
+              to={item.rota}
+              end={item.rota === '/'}
+              className={({ isActive }) => `nav-link ${isActive ? 'nav-link--active' : ''}`}
+              onClick={() => setMenuAberto(false)}
+            >
+              <span className="nav-icon">{item.icone}</span>
+              <span>{item.texto}</span>
+            </NavLink>
+          ))}
+        </nav>
 
-      <section id="next-steps">
-        <div id="docs">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#documentation-icon"></use>
-          </svg>
-          <h2>Documentation</h2>
-          <p>Your questions, answered</p>
-          <ul>
-            <li>
-              <a href="https://vite.dev/" target="_blank">
-                <img className="logo" src={viteLogo} alt="" />
-                Explore Vite
-              </a>
-            </li>
-            <li>
-              <a href="https://react.dev/" target="_blank">
-                <img className="button-icon" src={reactLogo} alt="" />
-                Learn more
-              </a>
-            </li>
-          </ul>
+        <div className="sidebar-footer">
+          <span className="connection-dot" />
+          <span>Monitoramento preventivo</span>
         </div>
-        <div id="social">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#social-icon"></use>
-          </svg>
-          <h2>Connect with us</h2>
-          <p>Join the Vite community</p>
-          <ul>
-            <li>
-              <a href="https://github.com/vitejs/vite" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#github-icon"></use>
-                </svg>
-                GitHub
-              </a>
-            </li>
-            <li>
-              <a href="https://chat.vite.dev/" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#discord-icon"></use>
-                </svg>
-                Discord
-              </a>
-            </li>
-            <li>
-              <a href="https://x.com/vite_js" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#x-icon"></use>
-                </svg>
-                X.com
-              </a>
-            </li>
-            <li>
-              <a href="https://bsky.app/profile/vite.dev" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#bluesky-icon"></use>
-                </svg>
-                Bluesky
-              </a>
-            </li>
-          </ul>
-        </div>
-      </section>
+      </aside>
 
-      <div className="ticks"></div>
-      <section id="spacer"></section>
-    </>
+      <main className="main-area">
+        <header className="topbar">
+          <button className="mobile-menu icon-button" aria-label="Abrir menu" onClick={() => setMenuAberto(true)}>
+            <MenuRounded />
+          </button>
+          <div className="topbar-title">
+            <span>Central de manutenção</span>
+            <h1>{titulo}</h1>
+          </div>
+          <a className="api-link" href="http://localhost:8080/swagger-ui.html" target="_blank" rel="noreferrer">
+            API <ArrowForwardRounded />
+          </a>
+        </header>
+
+        <div className="page-content">
+          <Routes>
+            <Route path="/" element={<DashboardPage />} />
+            <Route path="/equipamentos" element={<EquipamentosPage />} />
+            <Route path="/planos" element={<PlanosPage />} />
+            <Route path="/leituras" element={<LeiturasPage />} />
+            <Route path="/manutencoes" element={<ManutencoesPage />} />
+            <Route path="*" element={<DashboardPage />} />
+          </Routes>
+        </div>
+      </main>
+    </div>
   )
+}
+
+function DashboardPage() {
+  const { data, error, isPending, isError, dataUpdatedAt, refetch, isFetching } = useQuery({
+    queryKey: ['dashboard-resumo'],
+    queryFn: buscarResumo,
+  })
+
+  if (isPending) return <LoadingDashboard />
+  if (isError) {
+    return (
+      <section className="state-card error-state" role="alert">
+        <div className="state-symbol state-symbol--error">!</div>
+        <div>
+          <h2>Não foi possível carregar os dados</h2>
+          <p>{error.message}</p>
+          <button className="button button--secondary" onClick={() => void refetch()}>Tentar novamente</button>
+        </div>
+      </section>
+    )
+  }
+
+  const cards = [
+    { label: 'Vencidas', value: data.planosVencidos, tone: 'red', hint: 'Precisam de atenção' },
+    { label: 'Próximas', value: data.planosProximos, tone: 'amber', hint: 'Dentro da antecedência' },
+    { label: 'Em dia', value: data.planosEmDia, tone: 'green', hint: 'Dentro do intervalo' },
+    { label: 'Agendadas', value: data.manutencoesAgendadasProximosSeteDias, tone: 'blue', hint: 'Próximos 7 dias' },
+  ]
+
+  return (
+    <div className="dashboard-page">
+      <div className="page-intro">
+        <div>
+          <p className="eyebrow">ACOMPANHAMENTO OPERACIONAL</p>
+          <h2>Visão geral</h2>
+          <p className="page-description">Acompanhe os vencimentos e as próximas intervenções dos equipamentos.</p>
+        </div>
+        <button className="button button--secondary refresh-button" onClick={() => void refetch()} disabled={isFetching}>
+          <RefreshRounded className={isFetching ? 'spin' : ''} />
+          Atualizar
+        </button>
+      </div>
+
+      <section className="kpi-grid" aria-label="Resumo dos planos e manutenções">
+        {cards.map((card) => <KpiCard key={card.label} {...card} />)}
+      </section>
+
+      <div className="dashboard-grid">
+        <section className="panel alert-panel">
+          <div className="panel-heading">
+            <div>
+              <h2>Planos que precisam de atenção</h2>
+              <p>Vencimentos ordenados pelo maior atraso.</p>
+            </div>
+            <span className="panel-count">{data.alertasCriticos.length}</span>
+          </div>
+          <AlertsTable alerts={data.alertasCriticos} />
+        </section>
+
+        <section className="panel schedule-panel">
+          <div className="panel-heading">
+            <div>
+              <h2>Próximas manutenções</h2>
+              <p>Agendamentos dos próximos 7 dias.</p>
+            </div>
+            <CalendarTodayOutlined className="panel-heading-icon" />
+          </div>
+          {data.proximasManutencoes.length === 0 ? (
+            <EmptyState title="Nenhuma manutenção próxima" text="Os agendamentos para os próximos dias aparecerão aqui." />
+          ) : (
+            <ul className="schedule-list">
+              {data.proximasManutencoes.map((item) => (
+                <li className="schedule-item" key={item.id}>
+                  <div className="schedule-date">{formatDate(item.dataAgendada)}</div>
+                  <div className="schedule-details">
+                    <strong>{item.codigoEquipamento} · {item.nomeEquipamento}</strong>
+                    <span>{item.nomePlano ?? 'Manutenção corretiva'} · {labelTipo(item.tipo)}</span>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
+      </div>
+
+      <p className="updated-at">Dados atualizados {formatUpdatedAt(dataUpdatedAt)}</p>
+    </div>
+  )
+}
+
+function KpiCard({ label, value, tone, hint }: { label: string; value: number; tone: string; hint: string }) {
+  return (
+    <article className={`kpi-card kpi-card--${tone}`}>
+      <div className="kpi-topline">
+        <span className="kpi-label">{label}</span>
+        <span className="kpi-indicator" aria-hidden="true" />
+      </div>
+      <strong className="kpi-value">{value}</strong>
+      <span className="kpi-hint">{hint}</span>
+    </article>
+  )
+}
+
+function AlertsTable({ alerts }: { alerts: Alerta[] }) {
+  if (alerts.length === 0) {
+    return <EmptyState title="Tudo em dia" text="Nenhum plano ativo está vencido ou dentro da faixa de alerta." />
+  }
+
+  return (
+    <div className="table-scroll">
+      <table className="alerts-table">
+        <thead>
+          <tr>
+            <th>Equipamento</th>
+            <th>Plano</th>
+            <th>Horímetro</th>
+            <th>Restante</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          {alerts.map((alert) => (
+            <tr key={alert.planoId}>
+              <td>
+                <strong className="equipment-code">{alert.codigoEquipamento}</strong>
+                <span className="cell-secondary">{alert.nomeEquipamento}</span>
+              </td>
+              <td>
+                <strong className="plan-name">{alert.nomePlano}</strong>
+                <span className="cell-secondary">Vence em {formatHours(alert.proximoVencimento)}</span>
+              </td>
+              <td>{formatHours(alert.horimetroAtual)}</td>
+              <td className={alert.horasRestantes <= 0 ? 'remaining-overdue' : 'remaining-soon'}>
+                {formatHours(alert.horasRestantes)}
+              </td>
+              <td><StatusBadge status={alert.status} /></td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  )
+}
+
+function StatusBadge({ status }: { status: NivelAlerta }) {
+  const labels: Record<NivelAlerta, string> = { VENCIDA: 'Vencida', PROXIMA: 'Próxima', EM_DIA: 'Em dia' }
+  return <span className={`status-badge status-badge--${status.toLowerCase()}`}>{labels[status]}</span>
+}
+
+function EmptyState({ title, text }: { title: string; text: string }) {
+  return (
+    <div className="empty-state">
+      <div className="empty-state-icon"><AccessTimeRounded /></div>
+      <strong>{title}</strong>
+      <span>{text}</span>
+    </div>
+  )
+}
+
+function LoadingDashboard() {
+  return (
+    <div className="dashboard-page" aria-label="Carregando painel" aria-busy="true">
+      <div className="loading-heading skeleton" />
+      <div className="kpi-grid">{[1, 2, 3, 4].map((item) => <div className="kpi-card skeleton" key={item} />)}</div>
+      <div className="loading-panels">
+        <div className="panel skeleton" />
+        <div className="panel skeleton" />
+      </div>
+    </div>
+  )
+}
+
+function formatHours(value: number) {
+  const formatted = new Intl.NumberFormat('pt-BR', { maximumFractionDigits: 1 }).format(Math.abs(value))
+  return `${value < 0 ? '−' : ''}${formatted} h`
+}
+
+function formatDate(value: string | null) {
+  if (!value) return 'Data não definida'
+  const [year, month, day] = value.split('-').map(Number)
+  return new Intl.DateTimeFormat('pt-BR', { day: '2-digit', month: 'short' }).format(new Date(year, month - 1, day))
+}
+
+function formatUpdatedAt(timestamp: number) {
+  if (!timestamp) return 'ao abrir a página'
+  return `às ${new Intl.DateTimeFormat('pt-BR', { hour: '2-digit', minute: '2-digit' }).format(timestamp)}`
+}
+
+function labelTipo(tipo: ManutencaoAgendada['tipo']) {
+  return tipo === 'PREVENTIVA' ? 'Preventiva' : 'Corretiva'
 }
 
 export default App
