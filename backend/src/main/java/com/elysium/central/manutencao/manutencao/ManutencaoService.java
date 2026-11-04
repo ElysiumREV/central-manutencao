@@ -62,7 +62,8 @@ public class ManutencaoService {
 
     @Transactional(readOnly = true)
     public Page<ManutencaoResponse> listar(Long equipamentoId, StatusManutencao status, Pageable pageable) {
-        return manutencaoRepository.buscar(equipamentoId, status, pageable).map(ManutencaoResponse::de);
+        return manutencaoRepository.findAll(ManutencaoSpecifications.buscar(equipamentoId, status), pageable)
+                .map(ManutencaoResponse::de);
     }
 
     @Transactional(readOnly = true)

@@ -34,7 +34,8 @@ public class PlanoService {
 
     @Transactional(readOnly = true)
     public Page<PlanoResponse> listar(Long equipamentoId, Boolean ativo, Pageable pageable) {
-        return planoRepository.buscar(equipamentoId, ativo, pageable).map(PlanoResponse::de);
+        return planoRepository.findAll(PlanoSpecifications.buscar(equipamentoId, ativo), pageable)
+                .map(PlanoResponse::de);
     }
 
     @Transactional(readOnly = true)

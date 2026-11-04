@@ -2,17 +2,14 @@ package com.elysium.central.manutencao.plano;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.data.jpa.repository.Query;
-import org.springframework.data.repository.query.Param;
+import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 
-public interface PlanoRepository extends JpaRepository<PlanoManutencao, Long> {
+public interface PlanoRepository extends JpaRepository<PlanoManutencao, Long>, JpaSpecificationExecutor<PlanoManutencao> {
 
-    @Query("""
-            select p from PlanoManutencao p
-            where (:equipamentoId is null or p.equipamento.id = :equipamentoId)
-              and (:ativo is null or p.ativo = :ativo)
-            """)
-    Page<PlanoManutencao> buscar(@Param("equipamentoId") Long equipamentoId,
-            @Param("ativo") Boolean ativo, Pageable pageable);
+    @Override
+    @EntityGraph(attributePaths = "equipamento")
+    Page<PlanoManutencao> findAll(Specification<PlanoManutencao> specification, Pageable pageable);
 }

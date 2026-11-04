@@ -1,6 +1,7 @@
 package com.elysium.central.manutencao.alerta;
 
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -16,11 +17,10 @@ public class AlertaService {
     }
 
     public Page<AlertaResponse> listar(NivelAlerta nivel, String tipo, String termo, Pageable pageable) {
-        boolean incluirVencidas = nivel == null || nivel == NivelAlerta.VENCIDA;
-        boolean incluirProximas = nivel == null || nivel == NivelAlerta.PROXIMA;
         String tipoLimpo = limpar(tipo);
         String termoLimpo = limpar(termo);
-        return repository.buscarAlertas(incluirVencidas, incluirProximas, tipoLimpo, termoLimpo, pageable)
+        Pageable pagina = PageRequest.of(pageable.getPageNumber(), pageable.getPageSize());
+        return repository.findAll(AlertaSpecifications.para(nivel, tipoLimpo, termoLimpo), pagina)
                 .map(AlertaResponse::de);
     }
 

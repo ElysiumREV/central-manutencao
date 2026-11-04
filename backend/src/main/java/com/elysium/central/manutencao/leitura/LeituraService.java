@@ -61,7 +61,8 @@ public class LeituraService {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
                     "O início do período deve ser anterior ou igual ao fim.");
         }
-        return leituraRepository.buscar(equipamentoId, de, ate, pageable).map(LeituraResponse::de);
+        return leituraRepository.findAll(LeituraSpecifications.buscar(equipamentoId, de, ate), pageable)
+                .map(LeituraResponse::de);
     }
 
     private static String limpar(String valor) {

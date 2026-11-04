@@ -2,6 +2,8 @@ package com.elysium.central.manutencao.dashboard;
 
 import com.elysium.central.manutencao.alerta.AlertaRepository;
 import com.elysium.central.manutencao.alerta.AlertaResponse;
+import com.elysium.central.manutencao.alerta.AlertaSpecifications;
+import com.elysium.central.manutencao.alerta.NivelAlerta;
 import com.elysium.central.manutencao.manutencao.ManutencaoRepository;
 import com.elysium.central.manutencao.manutencao.ManutencaoResponse;
 import com.elysium.central.manutencao.manutencao.StatusManutencao;
@@ -44,7 +46,7 @@ public class DashboardService {
                 StatusManutencao.AGENDADA, hoje, limite);
 
         List<AlertaResponse> criticos = alertaRepository
-                .buscarAlertas(true, false, null, null, PageRequest.of(0, 5))
+                .findAll(AlertaSpecifications.para(NivelAlerta.VENCIDA, null, null), PageRequest.of(0, 5))
                 .map(AlertaResponse::de).getContent();
         List<ManutencaoResponse> proximasManutencoes = manutencaoRepository
                 .buscarAgendadasEntre(hoje, limite, PageRequest.of(0, 5))

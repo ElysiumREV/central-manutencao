@@ -33,7 +33,8 @@ public class EquipamentoService {
     public Page<EquipamentoResponse> listar(String termo, StatusEquipamento status, String tipo, Pageable pageable) {
         String termoLimpo = limpar(termo);
         String tipoLimpo = limpar(tipo);
-        return repository.buscar(termoLimpo, status, tipoLimpo, pageable).map(EquipamentoResponse::de);
+        return repository.findAll(EquipamentoSpecifications.buscar(termoLimpo, status, tipoLimpo), pageable)
+                .map(EquipamentoResponse::de);
     }
 
     @Transactional(readOnly = true)
