@@ -1,7 +1,7 @@
 # Contexto do projeto: Central de Monitoramento de Manutenção Preventiva por Horímetro
 
 > Documento de passagem de contexto. Se você é um LLM assumindo a conversa, leia tudo antes de responder.
-> Última atualização: 03/11/2026. Estado atual: backend de equipamentos, planos, leituras, manutenções, alertas e dashboard compila. Próximo passo: reconstruir a API e exercitar as consultas de alertas e resumo no Swagger.
+> Última atualização: 04/11/2026. Estado atual: backend principal implementado e compilado; correções de leitura retroativa e ordenação de alertas feitas; base visual do frontend com dashboard inicial também implementada e compilada. Próximo passo: reconstruir/executar localmente e validar a tela com a API.
 
 ---
 
@@ -84,6 +84,9 @@ Pacote base provável: `com.elysium.central.manutencao` (classe principal `Centr
 - Feature de leituras implementada: `POST /api/v1/equipamentos/{id}/leituras`, histórico global `GET /api/v1/leituras` e por equipamento `GET /api/v1/equipamentos/{id}/leituras`, com filtro de período/paginação. Atualiza horímetro e data da última leitura na transação que insere o histórico; valida horímetro não decrescente, data não futura e equipamento não inativo; `@Version` trata concorrência. `./mvnw -DskipTests compile` compilou 34 arquivos Java com sucesso (03/11). Testes não executados; ainda validar inicialização e comportamento pelo Swagger.
 - Revisão estática das features (03/11): mapeamentos e constraints foram comparados com a V1; removida consulta de leitura não usada, nome do path variable ficou explícito e o agendamento passou a verificar duplicidade antes de salvar, mantendo a proteção do índice único parcial contra concorrência. Compilação após os ajustes passou (`./mvnw -DskipTests compile`, 34 arquivos). O usuário relata ter testado as operações pelo Swagger; não foi possível consultar `localhost:8080` a partir do ambiente do agente, então essa validação manual fica registrada como informada pelo usuário.
 - Alertas e dashboard implementados (03/11): `GET /api/v1/alertas` retorna planos ativos em atraso ou dentro da antecedência, com filtro opcional de nível (`VENCIDA`/`PROXIMA`), tipo de equipamento e busca textual; ordena pelo menor número de horas restantes. `GET /api/v1/dashboard/resumo` retorna contadores de status, cinco alertas vencidos mais críticos e até cinco manutenções agendadas para os próximos sete dias (datas calculadas no fuso `America/Sao_Paulo`). O status é calculado em `PlanoManutencao` e reutilizado para evitar regra duplicada. Compilação passou (`./mvnw -DskipTests compile`, 42 arquivos); testes não executados. **Ainda precisa inicializar com PostgreSQL para validar queries JPQL e exercitar filtros/contadores pelo Swagger.**
+- Correções de revisão (04/11): leitura com `dataHora` anterior à `dataUltimaLeitura` agora retorna 422. Sem isso, uma leitura retroativa com horímetro igual/maior era aceita e substituía o campo que representa a data da última leitura, deixando o resumo do equipamento temporalmente incorreto. Alertas empatados no total de horas restantes agora são ordenados por `plano.id`; isso estabiliza a ordem entre páginas, evitando itens repetidos ou pulados em paginação quando os valores restantes empatam. Validar no Swagger: tentar leitura com timestamp menor que a última (esperado 422) e consultar alertas com dois planos empatados (ordem por ID).
+- Base inicial do frontend (04/11): removida tela padrão do Vite. Criado layout responsivo com navegação lateral, título, atalho para Swagger, página de dashboard ligada a `GET /api/v1/dashboard/resumo`, KPIs, tabela de alertas, próximas manutenções e estados de carregamento/erro/vazio. Rotas de equipamentos, planos, leituras e manutenções têm placeholders explícitos enquanto as telas são implementadas. React Router e TanStack Query foram conectados no `main.tsx`; idioma, título e descrição do documento ajustados para pt-BR. Motivo: estabelecer uma estrutura clara e demonstrável sem criar abstrações excessivas; manter as rotas reconhecíveis e avisar quais telas ainda não existem. `npm run build` passou após `npm ci`; ainda falta executar com backend e conferir visualmente no navegador.
+- Correção do dashboard (04/11): logs do Docker mostraram `ERROR: function lower(bytea) does not exist` no PostgreSQL quando o resumo buscava alertas sem filtros. A query anterior chamava `lower()` sobre parâmetros opcionais nulos. Substituída por `AlertaSpecifications`, que adiciona os predicados de tipo e texto somente quando o filtro existe; mantém ordenação por restante e ID. Isso remove a avaliação de `lower(NULL)` e mantém os filtros opcionais. API reconstruída; container ficou healthy. Confirmados HTTP 200 para `/api/v1/dashboard/resumo` direto na API e via nginx, `/api/v1/alertas` sem filtros, com `nivel=VENCIDA` e com filtros de tipo/texto.
 - CRUD de equipamentos implementado no pacote `backend/src/main/java/com/elysium/central/manutencao/equipamento/`.
 - Endpoints escritos: `POST /api/v1/equipamentos`, `GET /api/v1/equipamentos` com filtros/paginação, `GET /{id}`, `PUT /{id}` e `DELETE /{id}` para inativar.
 - Regras cobertas no código: horímetro inicial apenas no cadastro; atualização cadastral não altera horímetro; validação dos campos por Bean Validation; código duplicado retorna conflito; exclusão é lógica; `@Version` mapeia o lock otimista.
@@ -332,7 +335,7 @@ Os controllers mapeiam `/api/v1/...` diretamente (sem `server.servlet.context-pa
 
 ## 11. Telas (resumo; detalhes em `docs/telas.md`)
 
-Rotas: `/` (Painel), `/equipamentos`, `/equipamentos/novo`, `/equipamentos/:id/editar`, `/equipamentos/:id` (detalhe com abas Planos/Leituras/Manutenções/Dados), `/planos`, `/leituras`, `/manutencoes`.
+Rotas planejadas: `/` (Painel), `/equipamentos`, `/equipamentos/:id` (detalhe com abas Planos/Leituras/Manutenções/Dados), `/planos`, `/leituras`, `/manutencoes`. **Implementadas hoje:** `/`, `/equipamentos`, `/planos`, `/leituras` e `/manutencoes`; detalhe permanece planejado.
 
 - **Não há tela separada de Alertas**: o Painel é a tabela de alertas, com KPIs clicáveis (Vencidas, Próximas, Em dia, Agendadas) e ações por linha (registrar leitura, agendar, ver equipamento).
 - **Diálogo "Registrar leitura"** é o fluxo mais importante: mostra a última leitura, valida valor e data, e ao salvar exibe o impacto ("Plano X passou a VENCIDA").
@@ -354,7 +357,7 @@ Rotas: `/` (Painel), `/equipamentos`, `/equipamentos/novo`, `/equipamentos/:id/e
 | Planejamento restante | Tabela de casos de teste, Figma, cenários do seed | A fazer |
 | 1. Backend base | CRUD de equipamentos e planos, `ProblemDetail`, Swagger | Equipamentos, planos, leituras e manutenção escritos e compilando; validar com banco e pelo Swagger; tratamento global pendente |
 | 2. Regras | Leituras, alertas, dashboard, testes unitários e de integração (Testcontainers), seed `V2__seed_demo.sql` | Leituras, alertas e dashboard escritos/compilados; validar funcionalmente; testes e seed pendentes; manutenção compilada, validar |
-| 3. Frontend | Layout, componentes compartilhados, telas de cadastro, depois Painel e fluxos de leitura/manutenção | A fazer |
+| 3. Frontend | Layout, telas operacionais, integração e estados de interface | Painel, equipamentos, planos, leituras e manutenções implementados; ainda falta detalhe do equipamento, ações integradas do Painel e validação visual/integrada |
 | 4. Acabamento | Responsividade, acessibilidade, revisão de código, teste do compose do zero (`down -v`) | A fazer |
 | 5. Entregáveis | README completo, vídeo, revisão do histórico Git, clonar em pasta limpa e seguir o README | A fazer |
 
@@ -378,12 +381,15 @@ Rotas: `/` (Painel), `/equipamentos`, `/equipamentos/novo`, `/equipamentos/:id/e
 - [ ] Seed com 10–15 equipamentos cobrindo vencida, próxima e em dia, desenhado para a história do vídeo (sem informar `id`, que é `GENERATED ALWAYS`)
 
 **Fase 3 (frontend)**
-- [ ] MUI + React Router + TanStack Query + tema com tokens do Figma
-- [ ] Tipos gerados do OpenAPI e cliente HTTP
-- [ ] `AppLayout` (sidebar, topbar, botão **+ Leitura**)
-- [ ] Componentes: `StatusBadge`, `KpiCard`, `PlanoProgresso`, `HorasInput`, `EquipamentoAutocomplete`, `ConfirmDialog`, `EmptyState`, `ErrorState`, `PageHeader`
-- [ ] Equipamentos (lista, formulário, detalhe), planos, diálogo de leitura, manutenções, Painel
-- [ ] Testes de componentes críticos
+- [x] React Router + TanStack Query + layout inicial e painel; cliente HTTP simples
+- [x] Equipamentos: lista paginada, busca por TAG/nome, filtro por status, cadastro/edição e inativação com confirmação
+- [ ] Tipos gerados do OpenAPI; por enquanto, a tela define os tipos usados localmente
+- [x] Planos: filtro por equipamento/situação, lista, cadastro/edição e ativação/desativação
+- [x] Leituras: histórico por período e registro com invalidação de dados relacionados
+- [x] Manutenções: agenda/histórico, filtros, agendamento, conclusão e cancelamento
+- [ ] Detalhe do equipamento e ações do painel ligadas diretamente aos fluxos
+- [ ] Ações do painel ligadas aos fluxos (registrar leitura/agendar)
+- [ ] Revisão de acessibilidade/responsividade e testes de componentes críticos
 
 **Fase 5 (entregáveis)**
 - [ ] README: visão geral, screenshots, diagrama de arquitetura, pré-requisitos (Docker, ou JDK 21 + Node 20+), execução rápida e manual, regras de negócio, testes, decisões, melhorias futuras (autenticação JWT, notificações por e-mail, previsão por média de uso, deploy)
@@ -422,4 +428,38 @@ Rotas: `/` (Painel), `/equipamentos`, `/equipamentos/novo`, `/equipamentos/:id/e
 
 ## 15. Próximo passo sugerido
 
-Fechar as quatro pendências da Fase 0 e, em seguida, escrever o **CRUD de equipamentos** completo em Spring Boot 4 (entidade com `@Version`, repository, DTOs `record`, service, controller, handler global `ProblemDetail`, filtros e paginação, inativação, TAG duplicada → 409). Essa primeira feature serve de molde para planos, leituras e manutenções.
+O backend já tem as features de equipamentos, planos, leituras, manutenção, alertas e dashboard. O frontend tem o painel e telas funcionais para as quatro áreas operacionais. Próximo: ligar as ações do Painel aos formulários, fazer o detalhe do equipamento e validar os fluxos ponta a ponta pelo Docker. Depois focar em testes, acabamento e entregáveis.
+
+### Atualização de 2026-11-04 — primeira tela de equipamentos
+
+A rota `/equipamentos` deixou de ser placeholder. Ela consome a API real e oferece listagem paginada, busca por TAG/nome, filtro de status, cadastro, edição e inativação lógica com confirmação. A edição não altera o horímetro: ele muda pelo fluxo de leitura, preservando o histórico e a regra de negócio. Erros de conflito de TAG são traduzidos para uma mensagem compreensível. A implementação reutiliza TanStack Query e um cliente HTTP pequeno; após mutações, invalida a consulta da lista.
+
+**Motivo:** começar por equipamentos torna o dashboard navegável no uso real e cria o padrão de integração frontend/API que será reutilizado nas telas seguintes. O diálogo de formulário mantém a tela simples sem introduzir navegação e estrutura extra antes de haver necessidade.
+
+**Verificação feita:** `cd frontend && npm run build` concluiu com sucesso (TypeScript e Vite). Na primeira compilação o TypeScript apontou uso de propriedade de parâmetro no construtor de `ApiError`, incompatível com `erasableSyntaxOnly`; a classe foi ajustada para declarar `status` explicitamente e o build passou.
+
+### Atualização de 2026-11-04 — tela de planos
+
+A rota `/planos` agora lista planos com filtro por equipamento e ativo/inativo, mostra intervalo, horímetro de vencimento e status calculados pela API, e permite criar, editar e ativar/desativar. Ao criar, o horímetro da última execução é preenchido com o horímetro atual do equipamento escolhido; continua editável para representar planos cujo último serviço aconteceu antes do cadastro. A tela invalida consultas de planos e o resumo do dashboard após alterações, para refletir os novos dados.
+
+**Motivo:** a regra do próximo vencimento e o status pertencem ao domínio do backend; o frontend apenas exibe o resultado para manter uma fonte única de verdade. O plano está ligado a um equipamento desde sua criação, então a seleção é obrigatória e não muda na edição.
+
+**Verificação feita:** `cd frontend && npm run build` concluiu com sucesso após integrar as rotas `/equipamentos` e `/planos`.
+
+### Atualização de 2026-11-04 — leituras e manutenções
+
+As rotas `/leituras` e `/manutencoes` agora usam a API real. Leituras oferece histórico paginado com filtro por período e registro de nova leitura; após salvar, invalida as consultas de equipamentos, planos e dashboard, pois a medição pode mudar o horímetro atual e o status de alertas. Manutenções oferece filtro por status, agendamento (preventiva ligada a plano ativo ou corretiva), conclusão com horímetro/data e cancelamento com motivo. Ao concluir ou alterar uma manutenção, atualiza o histórico, os planos e o dashboard.
+
+**Motivo:** esses são os fluxos que mudam o estado do negócio. O frontend comunica as ações e exibe as validações retornadas pelo serviço; a API continua responsável por validar datas, sequência do horímetro, vínculo plano/equipamento e transições de status.
+
+**Verificação feita:** `cd frontend && npm run build` passou após integrar as telas de leituras e manutenções; `git diff --check` também passou. Ainda falta o teste manual integrado usando os containers atualizados.
+
+### Correção de 2026-11-04 — telas não carregavam as listas
+
+**Sintoma observado:** o dashboard continuava respondendo, mas as rotas de equipamentos, planos, leituras e manutenções falhavam ao carregar listas. O proxy do Nginx encaminhava as requisições corretamente; os registros dele mostravam HTTP 500 vindos da API.
+
+**Causa:** consultas JPQL usavam parâmetros opcionais com a forma `(:filtro is null OR ...)`. No PostgreSQL/Hibernate 7, a listagem de equipamentos com `termo=null` gerava `function lower(bytea) does not exist`, pois o parâmetro nulo chegava sem tipo textual resolvido. As consultas de leitura também falhavam quando filtros de período/equipamento eram omitidos.
+
+**Mudança:** trocamos os filtros opcionais de Equipamento, Plano, Leitura e Manutenção por Spring Data `Specification`. Cada predicado é incluído apenas quando o respectivo filtro tem valor. Isso remove a ambiguidade de tipo dos nulos e deixa a combinação de filtros explícita. Preservamos `EntityGraph` nas consultas paginadas que carregam associações usadas na resposta.
+
+**Verificação feita:** `./mvnw -o -DskipTests compile` passou. A imagem `api` foi reconstruída e o serviço ficou saudável. Os GET de equipamentos, planos, leituras, manutenções e dashboard retornaram HTTP 200 diretamente na API; os quatro endpoints de lista também retornaram 200 passando pelo proxy do container `web`. O banco não foi recriado, então os dados de desenvolvimento foram preservados.
