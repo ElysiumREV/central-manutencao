@@ -488,3 +488,53 @@ As rotas `/leituras` e `/manutencoes` agora usam a API real. Leituras oferece hi
 **Mudança:** trocamos os filtros opcionais de Equipamento, Plano, Leitura e Manutenção por Spring Data `Specification`. Cada predicado é incluído apenas quando o respectivo filtro tem valor. Isso remove a ambiguidade de tipo dos nulos e deixa a combinação de filtros explícita. Preservamos `EntityGraph` nas consultas paginadas que carregam associações usadas na resposta.
 
 **Verificação feita:** `./mvnw -o -DskipTests compile` passou. A imagem `api` foi reconstruída e o serviço ficou saudável. Os GET de equipamentos, planos, leituras, manutenções e dashboard retornaram HTTP 200 diretamente na API; os quatro endpoints de lista também retornaram 200 passando pelo proxy do container `web`. O banco não foi recriado, então os dados de desenvolvimento foram preservados.
+
+### Seed de demonstração — 2026-11-05
+
+**Mudança:** criado `backend/src/main/resources/db/migration/V2__seed_demo.sql`.
+
+**Motivo:** o avaliador (e o próprio vídeo de apresentação) precisa abrir a aplicação com dados reais que demonstrem as regras de negócio. Sem seed, o dashboard fica vazio e estados como VENCIDA/PRÓXIMA/EM DIA ficam invisíveis. Dados manuais inseridos via Swagger durante o desenvolvimento são voláteis e inconsistentes entre ambientes.
+
+**O que o seed faz:**
+
+1. `TRUNCATE manutencao, leitura_horimetro, plano_manutencao, equipamento RESTART IDENTITY CASCADE` — remove dados de desenvolvimento antes de inserir o seed. Roda apenas uma vez (Flyway controla).
+2. Insere 15 equipamentos com estados variados:
+   - **VENCIDOS (6 planos):** GRT-001 (2 planos para demonstrar múltiplos planos por equipamento), CPR-002, EMP-003, BTN-013, RMP-014.
+   - **PRÓXIMOS (4 planos):** BBA-004, MTR-005, TRT-006, ARC-007 (restante ≤ antecedência em cada um).
+   - **EM DIA (6 planos):** ESC-008, GNC-009, PFR-010, RET-011, VBR-012, BSB-015 (inativo).
+   - **Status de equipamento:** 12 ATIVO, 2 EM_MANUTENCAO (BTN-013, RMP-014 — plano vencido acionou a intervenção), 1 INATIVO (BSB-015).
+3. Insere histórico de leituras de horímetro (2–3 por equipamento).
+4. Insere manutenções:
+   - 5 CONCLUÍDAS (histórico preventivo e uma corretiva avulsa sem plano).
+   - 1 CANCELADA (exemplo de cancelamento com observação).
+   - 5 AGENDADAS com datas entre 06/11 e 11/11/2026, que aparecem no painel "Próximas manutenções" do dashboard.
+
+**Comportamento do Flyway com seeds:**
+- Cada migration roda **exatamente uma vez** — o Flyway registra a versão em `flyway_schema_history` e ignora nas próximas inicializações. Os 15 equipamentos **não se repetem** a cada `docker compose up`.
+- Para reiniciar com dados limpos (ex.: antes de gravar o vídeo): `docker compose down -v && docker compose up --build`. O `-v` apaga o volume `pgdata`; o Flyway aplica V1 e V2 do zero.
+
+**Decisão de design:** usar `SELECT id FROM equipamento WHERE codigo = 'XXX'` em vez de IDs numéricos fixos. Isso torna o seed independente da sequência real após o `RESTART IDENTITY` e sobrevive a futuros reordenamentos sem risco de FK quebrada.
+
+**Verificação pendente:** `docker compose down -v && docker compose up --build` para confirmar que o Flyway aplica V1 + V2 sem erro e o dashboard exibe os KPIs e as manutenções agendadas.
+
+---
+
+### Correção do ENTRYPOINT do backend — 2026-11-05
+
+**Mudança:** `backend/Dockerfile` linha 23 — adicionado `exec` antes do comando Java:
+
+```dockerfile
+# antes
+ENTRYPOINT ["sh", "-c", "java $JAVA_OPTS -jar app.jar"]
+
+# depois
+ENTRYPOINT ["sh", "-c", "exec java $JAVA_OPTS -jar app.jar"]
+```
+
+**Motivo:** sem o `exec`, o processo PID 1 do container é o `sh`, não a JVM. O Docker envia `SIGTERM` ao PID 1 durante `docker compose stop` ou `down`. Como o `sh` não repassa sinais aos filhos, a JVM nunca recebe o aviso de parada — o Spring Boot não faz shutdown graceful (não drena requisições, não fecha conexões com o banco) e o Docker precisa aguardar o timeout (padrão 10 s) antes de matar o container à força com `SIGKILL`.
+
+Com `exec`, o `sh` é **substituído** pela JVM (`execve` sobrescreve o processo), que se torna o PID 1. Ela recebe o `SIGTERM` diretamente e o Spring Boot encerra de forma limpa.
+
+**Por que usar `["sh", "-c", "exec ..."]` em vez de `["java", ...]` direto:** a forma exec-array `ENTRYPOINT ["java", ...]` não expande variáveis de shell como `$JAVA_OPTS`. Manter o `sh -c` com `exec` preserva a expansão de variáveis e garante o repasse correto do sinal.
+
+**Verificação:** `docker compose stop` deve encerrar o container `manutencao-api` em menos de 2 s com log `Stopped` (shutdown graceful do Spring Boot) em vez de aguardar os 10 s de timeout.
