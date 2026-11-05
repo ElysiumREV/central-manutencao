@@ -288,6 +288,16 @@
   box-sizing: border-box;
   background: #fff;
   box-shadow: 0 2px 5px rgba(23, 40, 61, .025);
+  color: inherit;
+  text-decoration: none;
+  transition: transform .15s ease, box-shadow .15s ease;
+}
+
+.kpi-card:hover,
+.kpi-card:focus-visible {
+  transform: translateY(-2px);
+  box-shadow: 0 5px 13px rgba(23, 40, 61, .09);
+  outline: none;
 }
 
 .kpi-card--red { --tone: #c84d4d; --tone-soft: #f9e9e9; }
@@ -418,6 +428,25 @@
   background: #fafcfd;
 }
 
+.dashboard-item-link {
+  display: block;
+  color: inherit;
+  text-decoration: none;
+  border-radius: 3px;
+}
+
+.dashboard-item-link:hover .equipment-code,
+.dashboard-item-link:hover .plan-name {
+  color: #286b55;
+  text-decoration: underline;
+}
+
+.dashboard-item-link:focus-visible,
+.schedule-link:focus-visible {
+  outline: 2px solid #39866d;
+  outline-offset: 3px;
+}
+
 .equipment-code,
 .plan-name,
 .cell-secondary {
@@ -506,10 +535,20 @@
 }
 
 .schedule-item {
+  border-bottom: 1px solid #f0f2f4;
+}
+
+.schedule-link {
   padding: 14px 0;
   display: flex;
   gap: 11px;
-  border-bottom: 1px solid #f0f2f4;
+  color: inherit;
+  text-decoration: none;
+}
+
+.schedule-link:hover .schedule-details strong {
+  color: #286b55;
+  text-decoration: underline;
 }
 
 .schedule-item:last-child {
