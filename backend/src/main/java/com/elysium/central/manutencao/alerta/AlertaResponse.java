@@ -3,6 +3,7 @@ package com.elysium.central.manutencao.alerta;
 import com.elysium.central.manutencao.plano.PlanoManutencao;
 import com.elysium.central.manutencao.plano.StatusPlano;
 import java.math.BigDecimal;
+import java.time.Instant;
 
 public record AlertaResponse(
         Long planoId,
@@ -14,13 +15,14 @@ public record AlertaResponse(
         BigDecimal horimetroAtual,
         BigDecimal proximoVencimento,
         BigDecimal horasRestantes,
-        StatusPlano status
+        StatusPlano status,
+        Instant dataReferencia
 ) {
     public static AlertaResponse de(PlanoManutencao plano) {
         return new AlertaResponse(plano.getId(), plano.getNome(),
                 plano.getEquipamento().getId(), plano.getEquipamento().getCodigo(),
                 plano.getEquipamento().getNome(), plano.getEquipamento().getTipo(),
                 plano.getEquipamento().getHorimetroAtual(), plano.getProximoVencimento(),
-                plano.calcularHorasRestantes(), plano.calcularStatus());
+                plano.calcularHorasRestantes(), plano.calcularStatus(), plano.getCriadoEm());
     }
 }

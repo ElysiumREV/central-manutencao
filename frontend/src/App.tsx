@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { NavLink, Route, Routes, useLocation } from 'react-router-dom'
+import { Link, NavLink, Route, Routes, useLocation } from 'react-router-dom'
 import DashboardOutlined from '@mui/icons-material/DashboardOutlined'
 import Inventory2Outlined from '@mui/icons-material/Inventory2Outlined'
 import AssignmentOutlined from '@mui/icons-material/AssignmentOutlined'
@@ -34,6 +34,7 @@ interface Alerta {
   proximoVencimento: number
   horasRestantes: number
   status: NivelAlerta
+  dataReferencia: string | null
 }
 
 interface ManutencaoAgendada {
@@ -256,11 +257,13 @@ function DashboardPage() {
             <ul className="schedule-list">
               {data.proximasManutencoes.map((item) => (
                 <li className="schedule-item" key={item.id}>
+                  <Link className="schedule-link" to="/manutencoes" aria-label={`Abrir manutenções: ${item.codigoEquipamento} ${item.nomeEquipamento}`}>
                   <div className="schedule-date">{formatDate(item.dataAgendada)}</div>
                   <div className="schedule-details">
                     <strong>{item.codigoEquipamento} · {item.nomeEquipamento}</strong>
                     <span>{item.nomePlano ?? 'Manutenção corretiva'} · {labelTipo(item.tipo)}</span>
                   </div>
+                  </Link>
                 </li>
               ))}
             </ul>
@@ -274,15 +277,16 @@ function DashboardPage() {
 }
 
 function KpiCard({ label, value, tone, hint }: { label: string; value: number; tone: string; hint: string }) {
+  const rota = label === 'Agendadas' ? '/manutencoes' : '/planos'
   return (
-    <article className={`kpi-card kpi-card--${tone}`}>
+    <NavLink to={rota} className={`kpi-card kpi-card--${tone}`} aria-label={`${label}: ${value}. Abrir ${rota === '/planos' ? 'planos de manutenção' : 'manutenções'}`}>
       <div className="kpi-topline">
         <span className="kpi-label">{label}</span>
         <span className="kpi-indicator" aria-hidden="true" />
       </div>
       <strong className="kpi-value">{value}</strong>
       <span className="kpi-hint">{hint}</span>
-    </article>
+    </NavLink>
   )
 }
 
@@ -307,12 +311,15 @@ function AlertsTable({ alerts }: { alerts: Alerta[] }) {
           {alerts.map((alert) => (
             <tr key={alert.planoId}>
               <td>
-                <strong className="equipment-code">{alert.codigoEquipamento}</strong>
+                <Link className="dashboard-item-link" to="/equipamentos" aria-label={`Abrir equipamentos: ${alert.codigoEquipamento} ${alert.nomeEquipamento}`}><strong className="equipment-code">{alert.codigoEquipamento}</strong>
                 <span className="cell-secondary">{alert.nomeEquipamento}</span>
+                </Link>
               </td>
               <td>
-                <strong className="plan-name">{alert.nomePlano}</strong>
+                <Link className="dashboard-item-link" to="/planos" aria-label={`Abrir planos: ${alert.nomePlano}`}><strong className="plan-name">{alert.nomePlano}</strong>
                 <span className="cell-secondary">Vence em {formatHours(alert.proximoVencimento)}</span>
+                <span className="cell-secondary">Referência: {formatCalendarDate(alert.dataReferencia)}</span>
+                </Link>
               </td>
               <td>{formatHours(alert.horimetroAtual)}</td>
               <td className={alert.horasRestantes <= 0 ? 'remaining-overdue' : 'remaining-soon'}>
@@ -363,7 +370,12 @@ function formatHours(value: number) {
 function formatDate(value: string | null) {
   if (!value) return 'Data não definida'
   const [year, month, day] = value.split('-').map(Number)
-  return new Intl.DateTimeFormat('pt-BR', { day: '2-digit', month: 'short' }).format(new Date(year, month - 1, day))
+  return new Intl.DateTimeFormat('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' }).format(new Date(year, month - 1, day))
+}
+
+function formatCalendarDate(value: string | null) {
+  if (!value) return '—'
+  return new Intl.DateTimeFormat('pt-BR', { dateStyle: 'short' }).format(new Date(value))
 }
 
 function formatUpdatedAt(timestamp: number) {
