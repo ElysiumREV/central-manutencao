@@ -642,3 +642,16 @@ O CSS continua todo em `App.css`. As regras do shell e do painel estão misturad
 - `calcularMudancas` é a função pura extraída do diálogo de leitura, em `features/leituras/impactoLeitura.ts`.
 
 **Dependências removidas:** `react-hook-form`, `zod` e `@hookform/resolvers`, que não eram usadas. Os formulários continuam com estado controlado.
+
+## Fechamento do código (06/11/2026, tarde)
+
+- **Tipos:** as quatro telas de cadastro também passaram a usar os tipos gerados (`api/tipos.ts`) e os formatadores de `shared/formatters.ts`, que ganhou `formatDateTime`. Os rótulos de status de plano estão em `shared/rotulos.ts`. Não sobrou interface copiada à mão.
+- **Prettier:** a configuração está em `frontend/.prettierrc.json` (sem ponto e vírgula, aspas simples, 120 colunas), com os scripts `format` e `format:check`. O commit de formatação é só de estilo.
+- **Clone limpo:**
+  - Feito com `git clone` do repositório local e `docker compose -p clone-teste up --build`. O `-p` é necessário porque o compose fixa `name: central-manutencao`, e sem ele o clone reaproveitaria o volume de dados existente.
+  - Resultado: 15 equipamentos, 6 planos vencidos, 4 próximos e 5 em dia, e 5 agendamentos de D+1 a D+6. No clone, `npm ci`, `npm test` (10), `npm run build` e `./mvnw test` (25) passaram.
+- **Screenshots:** ficam em `docs/screenshots/` e foram geradas com Chromium headless (playwright-core fora do repositório), em pt-BR, a partir de um banco recém-criado pelo seed.
+- **Correções visuais encontradas pelas capturas:** a 1440 px, o botão "Agendar" da tabela do painel ficava fora da área visível; as ações agora ficam empilhadas e o nome do plano quebra linha. Os cards-botão de KPI estavam desalinhados dos cards-link e foram corrigidos com flex em coluna.
+- **README:** ganhou diagrama Mermaid, decisões de arquitetura, galeria de telas e melhorias futuras: página de detalhe do equipamento, testes de componente, CSS do painel separado e envio do `version` na edição.
+
+**Ressalva sobre o lock otimista:** o `AtualizarEquipamentoRequest` não recebe `version`. O `@Version` só protege gravações concorrentes de verdade, e não uma edição feita a partir de um formulário desatualizado.

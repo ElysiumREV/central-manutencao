@@ -2,12 +2,28 @@
 
 Aplicação web para acompanhar manutenção preventiva de equipamentos com base no horímetro. O sistema registra equipamentos, planos, leituras e manutenções; calcula alertas de vencimento e exibe um painel operacional.
 
+![Painel de monitoramento](docs/screenshots/painel.png)
+
 ## Tecnologias
 
 - **Backend:** Java 21, Spring Boot 4, Spring Security, Spring Data JPA, Flyway e Springdoc OpenAPI.
-- **Frontend:** React, TypeScript, Vite, React Router, TanStack Query e Material UI.
+- **Frontend:** React, TypeScript, Vite, React Router e TanStack Query; ícones do Material UI e CSS próprio. Vitest e Testing Library nos testes.
 - **Banco:** PostgreSQL 16.
 - **Execução local:** Docker Compose e Nginx como proxy de `/api` para o backend.
+
+## Arquitetura
+
+```mermaid
+flowchart LR
+    U[Navegador] -->|":3000"| W["web — Nginx<br/>build do React"]
+    W -->|"/api/*"| A["api — Spring Boot :8080<br/>REST + Swagger"]
+    A -->|"JPA / Flyway"| D[("db — PostgreSQL 16")]
+```
+
+- **Status calculado, não armazenado:** o status de cada plano (vencida, próxima ou em dia) é calculado a cada consulta a partir do horímetro atual, do horímetro da última execução e do intervalo. Assim ele nunca fica desatualizado em relação às leituras.
+- **Regras protegidas em duas camadas:** as regras ficam nos services. O banco reforça as críticas com `CHECK`, chaves únicas e um índice único parcial, que garante no máximo um agendamento aberto por plano.
+- **Concorrência e contrato:** o equipamento tem lock otimista (`@Version`). Se duas gravações concorrentes atingirem o mesmo registro, a segunda recebe 409 em vez de sobrescrever a primeira. Os erros seguem o ProblemDetail (RFC 7807), e o frontend mostra a mensagem do backend.
+- **Tipos derivados do contrato:** os tipos TypeScript do frontend são gerados do OpenAPI do backend.
 
 ## Executar com Docker
 
@@ -76,8 +92,24 @@ Acesse <http://localhost:5173>. O Vite já repassa `/api` para `http://localhost
 - Registro e histórico de leituras de horímetro.
 - Cálculo de planos vencidos, próximos do vencimento e em dia.
 - Agendamento, conclusão e cancelamento de manutenções.
-- Dashboard com indicadores, alertas críticos e próximas manutenções.
+- Painel com indicadores (os cards de vencidas e próximas filtram a tabela), alertas com ações de registrar leitura e agendar, e próximas manutenções.
+- Ao registrar uma leitura, o sistema mostra quais planos mudaram de situação (ex.: Próxima → Vencida).
+- Lista de manutenções com escolha de ordem (padrão: prazo mais próximo).
 - Autenticação HTTP Basic para as rotas de negócio.
+
+## Telas
+
+| Registrar leitura a partir de um alerta | Impacto da leitura nos planos |
+|---|---|
+| ![Registrar leitura](docs/screenshots/registrar-leitura.png) | ![Impacto da leitura](docs/screenshots/impacto-da-leitura.png) |
+
+| Manutenções (ordenadas pelo prazo) | Planos de manutenção |
+|---|---|
+| ![Manutenções](docs/screenshots/manutencoes.png) | ![Planos](docs/screenshots/planos.png) |
+
+| Equipamentos | Painel no celular |
+|---|---|
+| ![Equipamentos](docs/screenshots/equipamentos.png) | ![Painel no celular](docs/screenshots/painel-celular.png) |
 
 ## Regras principais
 
@@ -115,6 +147,8 @@ npm test
 npm run build
 ```
 
+O código do frontend é formatado com Prettier (`npm run format`).
+
 ### Tipos da API no frontend
 
 Os tipos TypeScript das respostas vêm do OpenAPI do backend, em `frontend/src/api/schema.d.ts`, com apelidos em `frontend/src/api/tipos.ts`. O arquivo gerado é versionado, então o frontend compila sem a API no ar. Depois de mudar um DTO no backend, com a API rodando:
@@ -143,4 +177,7 @@ A autenticação atual usa um único usuário em memória, configurável por amb
 ## Próximas melhorias
 
 - Persistência e administração de usuários, autorização por papéis e HTTPS em implantação.
-- Usar os tipos gerados também nas telas de cadastro, que ainda têm interfaces próprias, e cobrir os fluxos de tela com testes de componente.
+- Página de detalhe do equipamento (histórico de leituras, planos e manutenções em um só lugar).
+- Testes de componente cobrindo os fluxos de tela (cadastro, leitura, agendamento).
+- Separar o CSS do painel do CSS do layout geral (`App.css`).
+- Enviar a `version` do equipamento na edição, para detectar também alterações feitas por outra pessoa enquanto o formulário estava aberto.
