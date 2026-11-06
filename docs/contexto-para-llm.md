@@ -584,3 +584,23 @@ Detalhes da implementação:
 - **Ordenação inválida:** confere o 400.
 
 A suíte tem agora 22 testes, todos passando. `tsc -b` e ESLint da página passaram; a conferência visual no navegador ainda não foi feita.
+
+### Atualização de 2026-11-06 — ações do Painel
+
+**Componentes compartilhados:**
+- **`features/leituras/RegistrarLeituraDialog.tsx`:** aceita `equipamentoId` e `horimetroAtual` opcionais. Mostra o horímetro atual e a data da última leitura, e limita a data/hora entre a última leitura e agora. Depois de salvar, exibe o **impacto** nos planos do equipamento (ex.: "Troca de óleo: Próxima → Vencida, 10 h de atraso"). Como faz: busca os planos antes de salvar, busca de novo depois e compara os status. O status continua calculado só pelo backend.
+- **`features/manutencoes/AgendarManutencaoDialog.tsx`:** aceita `equipamentoId` e `planoId` opcionais e usa hoje como data padrão (`min` = hoje). Se o plano já tem manutenção `AGENDADA`, mostra um aviso com a data e desabilita a confirmação. O 409 do service e o índice parcial continuam sendo a garantia.
+- **Uso:** as telas de Leituras e Manutenções passaram a usar esses componentes, o que removeu o código duplicado. Concluir e cancelar continuam na `ManutencoesPage`.
+
+**Painel (`App.tsx`):**
+- **Tabela:** usa `GET /api/v1/alertas?size=8`, com vencidas e próximas juntas e já ordenadas pelo backend (menor restante primeiro, desempate por id). Antes mostrava só as 5 vencidas de `dashboard/resumo.alertasCriticos`, então planos "Próximos" não tinham onde receber ação. O campo `alertasCriticos` continua na API, mas o frontend não o usa mais.
+- **Ações por linha:** cada linha tem os botões "Leitura" e "Agendar", que abrem os diálogos já preenchidos.
+- **KPIs:** Vencidas e Próximas viraram botões de alternância (`aria-pressed`) que filtram a tabela por `nivel`. Em dia e Agendadas continuam como links para as telas.
+- **"Ver todos":** link para `/planos` quando há mais alertas que o limite exibido.
+- **Topbar:** botão "+ Leitura", o atalho global do `telas.md`. No celular, aparece só o ícone.
+
+**Correção de lint anterior:** o `App` chamava `setState` síncrono dentro do `useEffect` de autenticação (regra `react-hooks/set-state-in-effect`). Agora o estado inicial já vem de `possuiCredenciais()`, sem mudança de comportamento. `npm run lint` passa sem erros.
+
+**Verificação feita:** `tsc -b`, `eslint src` e `npm run build` passaram. Pelo nginx, com o seed: `/alertas?size=8` devolve 10 no total (8 exibidos), `nivel=VENCIDA` devolve 6 e `nivel=PROXIMA` devolve 4. O plano da EMP-003 tem agendamento aberto, então o aviso aparece. Container `web` reconstruído. **A conferência visual ainda é do usuário.**
+
+**Lacuna conhecida:** o backend aceita `dataAgendada` no passado; apenas o diálogo impede isso. Se for corrigir, a regra vai no `ManutencaoService.agendar` (422), com teste.
