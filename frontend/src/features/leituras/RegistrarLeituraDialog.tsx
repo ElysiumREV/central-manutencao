@@ -1,7 +1,9 @@
 import { useState, type FormEvent } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { api } from '../../api/http'
-import type { Equipamento, Pagina, Plano, StatusPlano } from '../../api/tipos'
+import type { Equipamento, Pagina, Plano } from '../../api/tipos'
+import { ROTULOS_STATUS_PLANO } from '../../shared/rotulos'
+import { formatDateTime as formatarData, formatHours as horas } from '../../shared/formatters'
 import { calcularMudancas, type MudancaStatus } from './impactoLeitura'
 import './LeiturasPage.css'
 
@@ -73,7 +75,7 @@ export default function RegistrarLeituraDialog({ equipamentoId, horimetroAtual, 
           ? <p className="readings-result-neutral">Nenhum plano mudou de situação com esta leitura.</p>
           : <ul className="readings-impact">{resultado.mudancas.map(mudanca => <li key={mudanca.plano}>
             <strong>{mudanca.plano}</strong>
-            <span><span className={`readings-status readings-status--${mudanca.de.toLowerCase()}`}>{rotulo(mudanca.de)}</span> → <span className={`readings-status readings-status--${mudanca.para.toLowerCase()}`}>{rotulo(mudanca.para)}</span></span>
+            <span><span className={`readings-status readings-status--${mudanca.de.toLowerCase()}`}>{ROTULOS_STATUS_PLANO[mudanca.de]}</span> → <span className={`readings-status readings-status--${mudanca.para.toLowerCase()}`}>{ROTULOS_STATUS_PLANO[mudanca.para]}</span></span>
             <small>{mudanca.horasRestantes <= 0 ? `${horas(Math.abs(mudanca.horasRestantes))} de atraso` : `faltam ${horas(mudanca.horasRestantes)}`}</small>
           </li>)}</ul>}
         <footer><button className="readings-primary" onClick={aoFechar} autoFocus>Fechar</button></footer>
@@ -98,8 +100,5 @@ async function buscarPlanos(equipamentoId: string) {
   const pagina = await api.get<Pagina<Plano>>(`/api/v1/planos?equipamentoId=${equipamentoId}&ativo=true&size=100`)
   return pagina.content
 }
-function rotulo(status: StatusPlano) { return ({ VENCIDA: 'Vencida', PROXIMA: 'Próxima', EM_DIA: 'Em dia' })[status] }
-function horas(valor: number) { return `${new Intl.NumberFormat('pt-BR', { maximumFractionDigits: 1 }).format(valor)} h` }
-function formatarData(valor: string) { return new Intl.DateTimeFormat('pt-BR', { dateStyle: 'short', timeStyle: 'short' }).format(new Date(valor)) }
 function paraLocal(data: string | Date) { const local = new Date(data); local.setMinutes(local.getMinutes() - local.getTimezoneOffset()); return local.toISOString().slice(0, 16) }
 function agoraLocal() { return paraLocal(new Date()) }

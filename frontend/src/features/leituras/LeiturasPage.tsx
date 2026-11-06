@@ -2,11 +2,11 @@ import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import AddRounded from '@mui/icons-material/AddRounded'
 import { api } from '../../api/http'
+import type { Leitura, Pagina } from '../../api/tipos'
+import { formatDateTime as formatarData, formatHours as horas } from '../../shared/formatters'
 import RegistrarLeituraDialog from './RegistrarLeituraDialog'
 import './LeiturasPage.css'
 
-interface Leitura { id: number; equipamentoId: number; codigoEquipamento: string; nomeEquipamento: string; valor: number; dataHora: string; responsavel: string; observacao: string | null }
-interface Pagina<T> { content: T[]; totalElements: number; totalPages: number }
 
 export default function LeiturasPage() {
   const [pagina, setPagina] = useState(0)
@@ -33,6 +33,3 @@ export default function LeiturasPage() {
     {modal && <RegistrarLeituraDialog aoFechar={() => setModal(false)} />}
   </section>
 }
-
-function horas(valor: number) { return `${new Intl.NumberFormat('pt-BR', { maximumFractionDigits: 1 }).format(valor)} h` }
-function formatarData(valor: string) { return new Intl.DateTimeFormat('pt-BR', { dateStyle: 'short', timeStyle: 'short' }).format(new Date(valor)) }

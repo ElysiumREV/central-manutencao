@@ -3,17 +3,11 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import AddRounded from '@mui/icons-material/AddRounded'
 import EditOutlined from '@mui/icons-material/EditOutlined'
 import { api } from '../../api/http'
+import type { Equipamento, Pagina, Plano } from '../../api/tipos'
+import { ROTULOS_STATUS_PLANO } from '../../shared/rotulos'
+import { formatHours as horas } from '../../shared/formatters'
 import './PlanosPage.css'
 
-type StatusPlano = 'VENCIDA' | 'PROXIMA' | 'EM_DIA'
-interface Plano {
-  id: number; equipamentoId: number; codigoEquipamento: string; nomeEquipamento: string
-  nome: string; intervaloHoras: number; antecedenciaAlertaHoras: number
-  horimetroUltimaExecucao: number; proximoVencimento: number; horimetroAtual: number
-  horasRestantes: number; status: StatusPlano; ativo: boolean
-}
-interface Equipamento { id: number; codigo: string; nome: string; status: string; horimetroAtual: number }
-interface Pagina<T> { content: T[]; totalElements: number; totalPages: number }
 interface Formulario { equipamentoId: string; nome: string; intervaloHoras: string; antecedenciaAlertaHoras: string; horimetroUltimaExecucao: string; ativo: boolean }
 const vazio: Formulario = { equipamentoId: '', nome: '', intervaloHoras: '', antecedenciaAlertaHoras: '', horimetroUltimaExecucao: '0', ativo: true }
 
@@ -77,7 +71,7 @@ export default function PlanosPage() {
               <td><strong>{plano.nome}</strong><small>A cada {horas(plano.intervaloHoras)} · alertar com {horas(plano.antecedenciaAlertaHoras)} de antecedência</small></td>
               <td><strong>{plano.codigoEquipamento}</strong><small>{plano.nomeEquipamento}</small></td>
               <td>{horas(plano.intervaloHoras)}</td><td><strong>{horas(plano.proximoVencimento)}</strong><small>{plano.horasRestantes <= 0 ? `${horas(Math.abs(plano.horasRestantes))} em atraso` : `Faltam ${horas(plano.horasRestantes)}`}</small></td>
-              <td><span className={`plans-badge plans-badge--${plano.ativo ? plano.status.toLowerCase() : 'inativo'}`}>{plano.ativo ? rotuloStatus(plano.status) : 'Inativo'}</span></td>
+              <td><span className={`plans-badge plans-badge--${plano.ativo ? plano.status.toLowerCase() : 'inativo'}`}>{plano.ativo ? ROTULOS_STATUS_PLANO[plano.status] : 'Inativo'}</span></td>
               <td className="plans-actions"><button aria-label={`Editar ${plano.nome}`} title="Editar plano" onClick={() => abrirEdicao(plano)}><EditOutlined /></button><button disabled={alternar.isPending} onClick={() => alternar.mutate({ plano, ativo: !plano.ativo })}>{plano.ativo ? 'Desativar' : 'Ativar'}</button></td>
             </tr>)}</tbody></table></div><footer className="plans-pagination"><span>Página {pagina + 1} de {Math.max(planosQuery.data?.totalPages ?? 1, 1)}</span><div><button disabled={pagina === 0} onClick={() => setPagina(p => p - 1)}>Anterior</button><button disabled={pagina + 1 >= (planosQuery.data?.totalPages ?? 0)} onClick={() => setPagina(p => p + 1)}>Próxima</button></div></footer></>}
     </section>
@@ -91,6 +85,3 @@ export default function PlanosPage() {
     </form></section></div>}
   </section>
 }
-
-function horas(valor: number) { return `${new Intl.NumberFormat('pt-BR', { maximumFractionDigits: 1 }).format(valor)} h` }
-function rotuloStatus(status: StatusPlano) { return ({ VENCIDA: 'Vencida', PROXIMA: 'Próxima', EM_DIA: 'Em dia' })[status] }

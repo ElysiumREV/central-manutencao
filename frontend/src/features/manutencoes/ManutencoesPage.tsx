@@ -2,14 +2,11 @@ import { useState, type FormEvent } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import AddRounded from '@mui/icons-material/AddRounded'
 import { api } from '../../api/http'
+import type { Equipamento, Manutencao, Pagina, StatusManutencao as Status, TipoManutencao as Tipo } from '../../api/tipos'
+import { formatDate, formatDateTime as formatarData } from '../../shared/formatters'
 import AgendarManutencaoDialog from './AgendarManutencaoDialog'
 import './ManutencoesPage.css'
 
-type Status = 'AGENDADA' | 'CONCLUIDA' | 'CANCELADA'
-type Tipo = 'PREVENTIVA' | 'CORRETIVA'
-interface Manutencao { id:number; equipamentoId:number; codigoEquipamento:string; nomeEquipamento:string; planoId:number|null; nomePlano:string|null; tipo:Tipo; status:Status; dataAgendada:string|null; dataExecucao:string|null; horimetroExecucao:number|null; responsavel:string|null; observacoes:string|null }
-interface Equipamento { id:number; codigo:string; nome:string; status:string; horimetroAtual:number }
-interface Pagina<T> { content:T[]; totalElements:number; totalPages:number }
 type Acao = { tipo:'agendar' } | { tipo:'concluir'; manutencao:Manutencao } | { tipo:'cancelar'; manutencao:Manutencao }
 
 export default function ManutencoesPage() {
@@ -60,5 +57,4 @@ const ORDENS:Record<Ordem,{label:string;sort:string}>={
 // Agendadas e canceladas não têm data de execução; no PostgreSQL os nulos viriam primeiro nessa ordem.
 function ordensDisponiveis(status:string):Ordem[]{return status==='CONCLUIDA'||status===''?['prazo-asc','prazo-desc','execucao-desc','cadastro-desc']:['prazo-asc','prazo-desc','cadastro-desc']}
 function statusLabel(status:Status){return({AGENDADA:'Agendada',CONCLUIDA:'Concluída',CANCELADA:'Cancelada'})[status]}
-function formatarDia(valor:string|null){return valor?new Intl.DateTimeFormat('pt-BR',{dateStyle:'short'}).format(new Date(`${valor}T12:00:00`)):'—'}
-function formatarData(valor:string){return new Intl.DateTimeFormat('pt-BR',{dateStyle:'short',timeStyle:'short'}).format(new Date(valor))}
+function formatarDia(valor:string|null){return valor?formatDate(valor):'—'}

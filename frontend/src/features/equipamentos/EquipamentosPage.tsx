@@ -5,33 +5,9 @@ import EditOutlined from '@mui/icons-material/EditOutlined'
 import SearchRounded from '@mui/icons-material/SearchRounded'
 import CloseRounded from '@mui/icons-material/CloseRounded'
 import { api } from '../../api/http'
+import type { Equipamento, Pagina, StatusEquipamento } from '../../api/tipos'
+import { formatHours } from '../../shared/formatters'
 import './EquipamentosPage.css'
-
-type StatusEquipamento = 'ATIVO' | 'EM_MANUTENCAO' | 'INATIVO'
-
-interface Equipamento {
-  id: number
-  codigo: string
-  nome: string
-  tipo: string
-  fabricante: string | null
-  modelo: string | null
-  numeroSerie: string | null
-  localizacao: string | null
-  status: StatusEquipamento
-  horimetroAtual: number
-  dataUltimaLeitura: string | null
-  version: number
-  criadoEm: string
-  atualizadoEm: string
-}
-
-interface PaginaEquipamentos {
-  content: Equipamento[]
-  number: number
-  totalPages: number
-  totalElements: number
-}
 
 interface FormularioEquipamento {
   codigo: string
@@ -54,7 +30,7 @@ function buscarEquipamentos(termo: string, status: string, pagina: number) {
   const params = new URLSearchParams({ page: String(pagina), size: '10', sort: 'nome,asc' })
   if (termo) params.set('termo', termo)
   if (status) params.set('status', status)
-  return api.get<PaginaEquipamentos>(`/api/v1/equipamentos?${params.toString()}`)
+  return api.get<Pagina<Equipamento>>(`/api/v1/equipamentos?${params.toString()}`)
 }
 
 export default function EquipamentosPage() {
@@ -216,7 +192,7 @@ export default function EquipamentosPage() {
                       </td>
                       <td>{equipamento.tipo}</td>
                       <td>{equipamento.localizacao || '—'}</td>
-                      <td className="equipment-hours">{formatarHoras(equipamento.horimetroAtual)}</td>
+                      <td className="equipment-hours">{formatHours(equipamento.horimetroAtual)}</td>
                       <td><StatusPill status={equipamento.status} /></td>
                       <td className="equipment-actions">
                         <button className="equipment-icon-button" title="Editar equipamento" aria-label={`Editar ${equipamento.codigo}`} onClick={() => abrirEdicao(equipamento)}>
@@ -309,10 +285,6 @@ function Modal({ title, fechar, children }: { title: string; fechar: () => void;
 function StatusPill({ status }: { status: StatusEquipamento }) {
   const labels: Record<StatusEquipamento, string> = { ATIVO: 'Ativo', EM_MANUTENCAO: 'Em manutenção', INATIVO: 'Inativo' }
   return <span className={`equipment-status equipment-status--${status.toLowerCase()}`}>{labels[status]}</span>
-}
-
-function formatarHoras(valor: number) {
-  return `${new Intl.NumberFormat('pt-BR', { maximumFractionDigits: 1 }).format(valor)} h`
 }
 
 // A API devolve a explicação em `detail` (ProblemDetail); o cliente HTTP já a coloca em `message`.

@@ -13,6 +13,11 @@ export function formatDate(value: string | null) {
   return new Intl.DateTimeFormat('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' }).format(new Date(year, month - 1, day))
 }
 
+/** Data e hora curtas a partir de um instante ISO, no fuso do navegador. */
+export function formatDateTime(value: string) {
+  return new Intl.DateTimeFormat('pt-BR', { dateStyle: 'short', timeStyle: 'short' }).format(new Date(value))
+}
+
 /** Data curta a partir de um instante ISO (converte para o fuso do navegador). */
 export function formatCalendarDate(value: string | null) {
   if (!value) return '—'
