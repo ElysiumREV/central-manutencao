@@ -157,27 +157,43 @@
   letter-spacing: -.02em;
 }
 
+.topbar-actions {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Mesmo formato do botão "Sair": as ações secundárias ficam agrupadas à direita. */
 .api-link {
+  min-height: 32px;
+  padding: 0 10px;
   display: inline-flex;
   align-items: center;
   gap: 5px;
+  border: 1px solid #dce3e9;
+  border-radius: 6px;
   color: #52677a;
+  background: #fff;
   text-decoration: none;
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 600;
 }
 
 .api-link:hover {
   color: #287b6b;
+  border-color: #b6c4cd;
+  background: #f6faf9;
 }
 
 .api-link svg {
-  width: 16px;
-  height: 16px;
+  width: 14px;
+  height: 14px;
 }
 
 .logout-button {
-  padding: 7px 9px;
+  min-height: 32px;
+  padding: 0 9px;
   display: inline-flex;
   align-items: center;
   gap: 6px;
@@ -957,8 +973,7 @@ button.kpi-card {
 }
 
 .quick-reading-button {
-  margin-left: auto;
-  min-height: 34px;
+  min-height: 32px;
   padding: 0 12px;
   display: inline-flex;
   align-items: center;
@@ -1033,4 +1048,6 @@ button.kpi-card {
   /* No celular o botão vira só o ícone "+" para caber na topbar. */
   .quick-reading-button { width: 36px; padding: 0; justify-content: center; }
   .quick-reading-button span { display: none; }
+  .api-link { width: 32px; padding: 0; justify-content: center; }
+  .api-link span { display: none; }
 }

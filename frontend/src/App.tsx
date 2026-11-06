@@ -8,7 +8,7 @@ import SpeedOutlined from '@mui/icons-material/SpeedOutlined'
 import BuildOutlined from '@mui/icons-material/BuildOutlined'
 import MenuRounded from '@mui/icons-material/MenuRounded'
 import CloseRounded from '@mui/icons-material/CloseRounded'
-import ArrowForwardRounded from '@mui/icons-material/ArrowForwardRounded'
+import OpenInNewRounded from '@mui/icons-material/OpenInNewRounded'
 import LogoutOutlined from '@mui/icons-material/LogoutOutlined'
 import AddRounded from '@mui/icons-material/AddRounded'
 import { api, limparCredenciais, possuiCredenciais } from './api/http'
@@ -118,11 +118,14 @@ function AppShell({ aoSair }: { aoSair: () => void }) {
             <span>Central de manutenção</span>
             <h1>{titulo}</h1>
           </div>
-          <button className="quick-reading-button" onClick={() => setLeituraRapida(true)} aria-label="Registrar leitura"><AddRounded /> <span>Leitura</span></button>
-          <a className="api-link" href="http://localhost:8080/swagger-ui.html" target="_blank" rel="noreferrer">
-            API <ArrowForwardRounded />
-          </a>
-          <button className="logout-button" onClick={aoSair}><LogoutOutlined /> Sair</button>
+          <div className="topbar-actions">
+            <button className="quick-reading-button" onClick={() => setLeituraRapida(true)} aria-label="Registrar leitura"><AddRounded /> <span>Leitura</span></button>
+            <a className="api-link" href="http://localhost:8080/swagger-ui.html" target="_blank" rel="noreferrer"
+              title="Documentação da API (Swagger), abre em nova aba" aria-label="Documentação da API, abre em nova aba">
+              <OpenInNewRounded /> <span>API</span>
+            </a>
+            <button className="logout-button" onClick={aoSair}><LogoutOutlined /> Sair</button>
+          </div>
         </header>
 
         <div className="page-content">
