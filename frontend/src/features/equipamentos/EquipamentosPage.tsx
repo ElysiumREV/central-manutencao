@@ -22,8 +22,15 @@ interface FormularioEquipamento {
 }
 
 const formularioVazio: FormularioEquipamento = {
-  codigo: '', nome: '', tipo: '', fabricante: '', modelo: '', numeroSerie: '',
-  localizacao: '', horimetroInicial: '0', status: 'ATIVO',
+  codigo: '',
+  nome: '',
+  tipo: '',
+  fabricante: '',
+  modelo: '',
+  numeroSerie: '',
+  localizacao: '',
+  horimetroInicial: '0',
+  status: 'ATIVO',
 }
 
 function buscarEquipamentos(termo: string, status: string, pagina: number) {
@@ -147,44 +154,84 @@ export default function EquipamentosPage() {
           <label className="equipment-search">
             <span className="sr-only">Buscar por TAG ou nome</span>
             <SearchRounded />
-            <input value={termoRascunho} onChange={(event) => setTermoRascunho(event.target.value)} placeholder="Buscar por TAG ou nome" />
+            <input
+              value={termoRascunho}
+              onChange={event => setTermoRascunho(event.target.value)}
+              placeholder="Buscar por TAG ou nome"
+            />
           </label>
           <label className="equipment-status-filter">
             <span className="sr-only">Filtrar por status</span>
-            <select value={status} onChange={(event) => { setStatus(event.target.value); setPagina(0) }}>
+            <select
+              value={status}
+              onChange={event => {
+                setStatus(event.target.value)
+                setPagina(0)
+              }}
+            >
               <option value="">Todos os status</option>
               <option value="ATIVO">Ativo</option>
               <option value="EM_MANUTENCAO">Em manutenção</option>
               <option value="INATIVO">Inativo</option>
             </select>
           </label>
-          <button className="equipment-button equipment-button--secondary" type="submit">Buscar</button>
-          {equipamentosQuery.data && <span className="equipment-total">{equipamentosQuery.data.totalElements} equipamentos</span>}
+          <button className="equipment-button equipment-button--secondary" type="submit">
+            Buscar
+          </button>
+          {equipamentosQuery.data && (
+            <span className="equipment-total">{equipamentosQuery.data.totalElements} equipamentos</span>
+          )}
         </form>
 
         {equipamentosQuery.isPending ? (
-          <div className="equipment-loading" aria-label="Carregando equipamentos"><span /><span /><span /></div>
+          <div className="equipment-loading" aria-label="Carregando equipamentos">
+            <span />
+            <span />
+            <span />
+          </div>
         ) : equipamentosQuery.isError ? (
           <div className="equipment-message equipment-message--error" role="alert">
             <strong>Não foi possível carregar os equipamentos.</strong>
             <span>{equipamentosQuery.error.message}</span>
-            <button className="equipment-button equipment-button--secondary" onClick={() => void equipamentosQuery.refetch()}>Tentar novamente</button>
+            <button
+              className="equipment-button equipment-button--secondary"
+              onClick={() => void equipamentosQuery.refetch()}
+            >
+              Tentar novamente
+            </button>
           </div>
         ) : equipamentos.length === 0 ? (
           <div className="equipment-message">
             <strong>{termo || status ? 'Nenhum equipamento encontrado' : 'Nenhum equipamento cadastrado'}</strong>
-            <span>{termo || status ? 'Altere os filtros ou a busca e tente novamente.' : 'Cadastre o primeiro equipamento para iniciar o monitoramento.'}</span>
-            {!termo && !status && <button className="equipment-button equipment-button--secondary" onClick={abrirNovo}>Cadastrar equipamento</button>}
+            <span>
+              {termo || status
+                ? 'Altere os filtros ou a busca e tente novamente.'
+                : 'Cadastre o primeiro equipamento para iniciar o monitoramento.'}
+            </span>
+            {!termo && !status && (
+              <button className="equipment-button equipment-button--secondary" onClick={abrirNovo}>
+                Cadastrar equipamento
+              </button>
+            )}
           </div>
         ) : (
           <>
             <div className="equipment-table-scroll">
               <table className="equipment-table">
                 <thead>
-                  <tr><th>Equipamento</th><th>Tipo</th><th>Localização</th><th>Horímetro</th><th>Status</th><th><span className="sr-only">Ações</span></th></tr>
+                  <tr>
+                    <th>Equipamento</th>
+                    <th>Tipo</th>
+                    <th>Localização</th>
+                    <th>Horímetro</th>
+                    <th>Status</th>
+                    <th>
+                      <span className="sr-only">Ações</span>
+                    </th>
+                  </tr>
                 </thead>
                 <tbody>
-                  {equipamentos.map((equipamento) => (
+                  {equipamentos.map(equipamento => (
                     <tr key={equipamento.id}>
                       <td>
                         <strong className="equipment-tag">{equipamento.codigo}</strong>
@@ -193,13 +240,22 @@ export default function EquipamentosPage() {
                       <td>{equipamento.tipo}</td>
                       <td>{equipamento.localizacao || '—'}</td>
                       <td className="equipment-hours">{formatHours(equipamento.horimetroAtual)}</td>
-                      <td><StatusPill status={equipamento.status} /></td>
+                      <td>
+                        <StatusPill status={equipamento.status} />
+                      </td>
                       <td className="equipment-actions">
-                        <button className="equipment-icon-button" title="Editar equipamento" aria-label={`Editar ${equipamento.codigo}`} onClick={() => abrirEdicao(equipamento)}>
+                        <button
+                          className="equipment-icon-button"
+                          title="Editar equipamento"
+                          aria-label={`Editar ${equipamento.codigo}`}
+                          onClick={() => abrirEdicao(equipamento)}
+                        >
                           <EditOutlined />
                         </button>
                         {equipamento.status !== 'INATIVO' && (
-                          <button className="equipment-text-button" onClick={() => setConfirmarInativacao(equipamento)}>Inativar</button>
+                          <button className="equipment-text-button" onClick={() => setConfirmarInativacao(equipamento)}>
+                            Inativar
+                          </button>
                         )}
                       </td>
                     </tr>
@@ -208,10 +264,24 @@ export default function EquipamentosPage() {
               </table>
             </div>
             <div className="equipment-pagination">
-              <span>Página {pagina + 1} de {Math.max(equipamentosQuery.data.totalPages, 1)}</span>
+              <span>
+                Página {pagina + 1} de {Math.max(equipamentosQuery.data.totalPages, 1)}
+              </span>
               <div>
-                <button className="equipment-button equipment-button--secondary" disabled={pagina === 0} onClick={() => setPagina((valor) => valor - 1)}>Anterior</button>
-                <button className="equipment-button equipment-button--secondary" disabled={pagina + 1 >= equipamentosQuery.data.totalPages} onClick={() => setPagina((valor) => valor + 1)}>Próxima</button>
+                <button
+                  className="equipment-button equipment-button--secondary"
+                  disabled={pagina === 0}
+                  onClick={() => setPagina(valor => valor - 1)}
+                >
+                  Anterior
+                </button>
+                <button
+                  className="equipment-button equipment-button--secondary"
+                  disabled={pagina + 1 >= equipamentosQuery.data.totalPages}
+                  onClick={() => setPagina(valor => valor + 1)}
+                >
+                  Próxima
+                </button>
               </div>
             </div>
           </>
@@ -221,31 +291,111 @@ export default function EquipamentosPage() {
       {formularioAberto && (
         <Modal title={editando ? 'Editar equipamento' : 'Novo equipamento'} fechar={fecharFormulario}>
           <form className="equipment-form" onSubmit={enviarFormulario}>
-            <p className="form-intro">{editando ? 'Atualize os dados cadastrais. O horímetro é atualizado pelo registro de leitura.' : 'Informe os dados principais do equipamento para começar o monitoramento.'}</p>
+            <p className="form-intro">
+              {editando
+                ? 'Atualize os dados cadastrais. O horímetro é atualizado pelo registro de leitura.'
+                : 'Informe os dados principais do equipamento para começar o monitoramento.'}
+            </p>
             <div className="equipment-form-grid">
-              <label>TAG / Código <input required maxLength={50} value={formulario.codigo} onChange={(e) => setFormulario({ ...formulario, codigo: e.target.value })} /></label>
-              <label>Nome <input required maxLength={150} value={formulario.nome} onChange={(e) => setFormulario({ ...formulario, nome: e.target.value })} /></label>
-              <label>Tipo <input required maxLength={80} value={formulario.tipo} onChange={(e) => setFormulario({ ...formulario, tipo: e.target.value })} /></label>
-              <label>Localização <input maxLength={150} value={formulario.localizacao} onChange={(e) => setFormulario({ ...formulario, localizacao: e.target.value })} /></label>
-              <label>Fabricante <input maxLength={100} value={formulario.fabricante} onChange={(e) => setFormulario({ ...formulario, fabricante: e.target.value })} /></label>
-              <label>Modelo <input maxLength={100} value={formulario.modelo} onChange={(e) => setFormulario({ ...formulario, modelo: e.target.value })} /></label>
-              <label>Número de série <input maxLength={100} value={formulario.numeroSerie} onChange={(e) => setFormulario({ ...formulario, numeroSerie: e.target.value })} /></label>
+              <label>
+                TAG / Código{' '}
+                <input
+                  required
+                  maxLength={50}
+                  value={formulario.codigo}
+                  onChange={e => setFormulario({ ...formulario, codigo: e.target.value })}
+                />
+              </label>
+              <label>
+                Nome{' '}
+                <input
+                  required
+                  maxLength={150}
+                  value={formulario.nome}
+                  onChange={e => setFormulario({ ...formulario, nome: e.target.value })}
+                />
+              </label>
+              <label>
+                Tipo{' '}
+                <input
+                  required
+                  maxLength={80}
+                  value={formulario.tipo}
+                  onChange={e => setFormulario({ ...formulario, tipo: e.target.value })}
+                />
+              </label>
+              <label>
+                Localização{' '}
+                <input
+                  maxLength={150}
+                  value={formulario.localizacao}
+                  onChange={e => setFormulario({ ...formulario, localizacao: e.target.value })}
+                />
+              </label>
+              <label>
+                Fabricante{' '}
+                <input
+                  maxLength={100}
+                  value={formulario.fabricante}
+                  onChange={e => setFormulario({ ...formulario, fabricante: e.target.value })}
+                />
+              </label>
+              <label>
+                Modelo{' '}
+                <input
+                  maxLength={100}
+                  value={formulario.modelo}
+                  onChange={e => setFormulario({ ...formulario, modelo: e.target.value })}
+                />
+              </label>
+              <label>
+                Número de série{' '}
+                <input
+                  maxLength={100}
+                  value={formulario.numeroSerie}
+                  onChange={e => setFormulario({ ...formulario, numeroSerie: e.target.value })}
+                />
+              </label>
               {editando ? (
-                <label>Status
-                  <select value={formulario.status} onChange={(e) => setFormulario({ ...formulario, status: e.target.value as StatusEquipamento })}>
-                    <option value="ATIVO">Ativo</option><option value="EM_MANUTENCAO">Em manutenção</option><option value="INATIVO">Inativo</option>
+                <label>
+                  Status
+                  <select
+                    value={formulario.status}
+                    onChange={e => setFormulario({ ...formulario, status: e.target.value as StatusEquipamento })}
+                  >
+                    <option value="ATIVO">Ativo</option>
+                    <option value="EM_MANUTENCAO">Em manutenção</option>
+                    <option value="INATIVO">Inativo</option>
                   </select>
                 </label>
               ) : (
-                <label>Horímetro inicial (h)
-                  <input required type="number" min="0" step="0.1" value={formulario.horimetroInicial} onChange={(e) => setFormulario({ ...formulario, horimetroInicial: e.target.value })} />
+                <label>
+                  Horímetro inicial (h)
+                  <input
+                    required
+                    type="number"
+                    min="0"
+                    step="0.1"
+                    value={formulario.horimetroInicial}
+                    onChange={e => setFormulario({ ...formulario, horimetroInicial: e.target.value })}
+                  />
                 </label>
               )}
             </div>
-            {salvarMutation.isError && <p className="form-error" role="alert">{mensagemErro(salvarMutation.error)}</p>}
+            {salvarMutation.isError && (
+              <p className="form-error" role="alert">
+                {mensagemErro(salvarMutation.error)}
+              </p>
+            )}
             <div className="equipment-form-actions">
-              <button className="equipment-button equipment-button--secondary" type="button" onClick={fecharFormulario}>Cancelar</button>
-              <button className="equipment-button equipment-button--primary" disabled={salvarMutation.isPending} type="submit">
+              <button className="equipment-button equipment-button--secondary" type="button" onClick={fecharFormulario}>
+                Cancelar
+              </button>
+              <button
+                className="equipment-button equipment-button--primary"
+                disabled={salvarMutation.isPending}
+                type="submit"
+              >
                 {salvarMutation.isPending ? 'Salvando…' : editando ? 'Salvar alterações' : 'Cadastrar equipamento'}
               </button>
             </div>
@@ -256,11 +406,30 @@ export default function EquipamentosPage() {
       {confirmarInativacao && (
         <Modal title="Inativar equipamento" fechar={() => setConfirmarInativacao(null)}>
           <div className="confirm-content">
-            <p>O equipamento <strong>{confirmarInativacao.codigo} · {confirmarInativacao.nome}</strong> será marcado como inativo. O histórico será preservado.</p>
-            {inativarMutation.isError && <p className="form-error" role="alert">{mensagemErro(inativarMutation.error)}</p>}
+            <p>
+              O equipamento{' '}
+              <strong>
+                {confirmarInativacao.codigo} · {confirmarInativacao.nome}
+              </strong>{' '}
+              será marcado como inativo. O histórico será preservado.
+            </p>
+            {inativarMutation.isError && (
+              <p className="form-error" role="alert">
+                {mensagemErro(inativarMutation.error)}
+              </p>
+            )}
             <div className="equipment-form-actions">
-              <button className="equipment-button equipment-button--secondary" onClick={() => setConfirmarInativacao(null)}>Cancelar</button>
-              <button className="equipment-button equipment-button--danger" disabled={inativarMutation.isPending} onClick={() => inativarMutation.mutate(confirmarInativacao.id)}>
+              <button
+                className="equipment-button equipment-button--secondary"
+                onClick={() => setConfirmarInativacao(null)}
+              >
+                Cancelar
+              </button>
+              <button
+                className="equipment-button equipment-button--danger"
+                disabled={inativarMutation.isPending}
+                onClick={() => inativarMutation.mutate(confirmarInativacao.id)}
+              >
                 {inativarMutation.isPending ? 'Inativando…' : 'Confirmar inativação'}
               </button>
             </div>
@@ -273,9 +442,20 @@ export default function EquipamentosPage() {
 
 function Modal({ title, fechar, children }: { title: string; fechar: () => void; children: ReactNode }) {
   return (
-    <div className="modal-backdrop" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) fechar() }}>
+    <div
+      className="modal-backdrop"
+      role="presentation"
+      onMouseDown={event => {
+        if (event.target === event.currentTarget) fechar()
+      }}
+    >
       <section className="equipment-modal" role="dialog" aria-modal="true" aria-label={title}>
-        <div className="modal-heading"><h2>{title}</h2><button className="equipment-icon-button" aria-label="Fechar" onClick={fechar}><CloseRounded /></button></div>
+        <div className="modal-heading">
+          <h2>{title}</h2>
+          <button className="equipment-icon-button" aria-label="Fechar" onClick={fechar}>
+            <CloseRounded />
+          </button>
+        </div>
         {children}
       </section>
     </div>
@@ -283,7 +463,11 @@ function Modal({ title, fechar, children }: { title: string; fechar: () => void;
 }
 
 function StatusPill({ status }: { status: StatusEquipamento }) {
-  const labels: Record<StatusEquipamento, string> = { ATIVO: 'Ativo', EM_MANUTENCAO: 'Em manutenção', INATIVO: 'Inativo' }
+  const labels: Record<StatusEquipamento, string> = {
+    ATIVO: 'Ativo',
+    EM_MANUTENCAO: 'Em manutenção',
+    INATIVO: 'Inativo',
+  }
   return <span className={`equipment-status equipment-status--${status.toLowerCase()}`}>{labels[status]}</span>
 }
 

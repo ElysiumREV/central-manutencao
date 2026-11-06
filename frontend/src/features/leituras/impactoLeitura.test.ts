@@ -1,8 +1,12 @@
 import { describe, expect, it } from 'vitest'
 import { calcularMudancas } from './impactoLeitura'
 
-const plano = (id: number, status: 'VENCIDA' | 'PROXIMA' | 'EM_DIA', horasRestantes = 0) =>
-  ({ id, nome: `Plano ${id}`, status, horasRestantes })
+const plano = (id: number, status: 'VENCIDA' | 'PROXIMA' | 'EM_DIA', horasRestantes = 0) => ({
+  id,
+  nome: `Plano ${id}`,
+  status,
+  horasRestantes,
+})
 
 describe('calcularMudancas', () => {
   it('lista só os planos que mudaram de situação', () => {

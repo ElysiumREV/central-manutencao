@@ -15,7 +15,7 @@
   color: #738494;
   font-size: 10px;
   font-weight: 700;
-  letter-spacing: .1em;
+  letter-spacing: 0.1em;
 }
 
 .equipment-heading h2 {
@@ -23,7 +23,7 @@
   color: #203248;
   font-size: 25px;
   font-weight: 680;
-  letter-spacing: -.035em;
+  letter-spacing: -0.035em;
 }
 
 .equipment-heading p:not(.equipment-eyebrow) {
@@ -45,7 +45,9 @@
   font-size: 11px;
   font-weight: 650;
   cursor: pointer;
-  transition: background-color .15s ease, border-color .15s ease;
+  transition:
+    background-color 0.15s ease,
+    border-color 0.15s ease;
 }
 
 .equipment-button svg {
@@ -54,7 +56,7 @@
 }
 
 .equipment-button:disabled {
-  opacity: .55;
+  opacity: 0.55;
   cursor: not-allowed;
 }
 
@@ -92,7 +94,7 @@
   border: 1px solid #e7ebef;
   border-radius: 9px;
   background: #fff;
-  box-shadow: 0 2px 5px rgba(23, 40, 61, .025);
+  box-shadow: 0 2px 5px rgba(23, 40, 61, 0.025);
 }
 
 .equipment-filters {
@@ -118,7 +120,7 @@
 
 .equipment-search:focus-within {
   border-color: #5c9b8c;
-  box-shadow: 0 0 0 3px rgba(40, 123, 107, .1);
+  box-shadow: 0 0 0 3px rgba(40, 123, 107, 0.1);
 }
 
 .equipment-search svg {
@@ -228,9 +230,18 @@
   font-weight: 700;
 }
 
-.equipment-status--ativo { color: #2f765e; background: #e8f3ed; }
-.equipment-status--em_manutencao { color: #93671b; background: #fbf1dc; }
-.equipment-status--inativo { color: #687785; background: #edf0f2; }
+.equipment-status--ativo {
+  color: #2f765e;
+  background: #e8f3ed;
+}
+.equipment-status--em_manutencao {
+  color: #93671b;
+  background: #fbf1dc;
+}
+.equipment-status--inativo {
+  color: #687785;
+  background: #edf0f2;
+}
 
 .equipment-actions {
   display: flex;
@@ -347,7 +358,9 @@
 }
 
 @keyframes equipment-shimmer {
-  to { background-position: -100% 0; }
+  to {
+    background-position: -100% 0;
+  }
 }
 
 .modal-backdrop {
@@ -358,7 +371,7 @@
   display: grid;
   place-items: center;
   overflow-y: auto;
-  background: rgba(15, 29, 43, .48);
+  background: rgba(15, 29, 43, 0.48);
 }
 
 .equipment-modal {
@@ -367,7 +380,7 @@
   overflow-y: auto;
   border-radius: 11px;
   background: #fff;
-  box-shadow: 0 18px 60px rgba(16, 31, 45, .24);
+  box-shadow: 0 18px 60px rgba(16, 31, 45, 0.24);
 }
 
 .modal-heading {
@@ -436,7 +449,7 @@
 .equipment-form-grid input:focus,
 .equipment-form-grid select:focus {
   border-color: #5c9b8c;
-  box-shadow: 0 0 0 3px rgba(40, 123, 107, .1);
+  box-shadow: 0 0 0 3px rgba(40, 123, 107, 0.1);
 }
 
 .form-error {

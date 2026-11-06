@@ -10,7 +10,9 @@ export function formatHours(value: number) {
 export function formatDate(value: string | null) {
   if (!value) return 'Data não definida'
   const [year, month, day] = value.split('-').map(Number)
-  return new Intl.DateTimeFormat('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' }).format(new Date(year, month - 1, day))
+  return new Intl.DateTimeFormat('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' }).format(
+    new Date(year, month - 1, day),
+  )
 }
 
 /** Data e hora curtas a partir de um instante ISO, no fuso do navegador. */

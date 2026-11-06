@@ -19,4 +19,9 @@ export type StatusManutencao = Manutencao['status']
 export type StatusEquipamento = Equipamento['status']
 
 /** Página do Spring Data; só os campos que o frontend usa. */
-export interface Pagina<T> { content: T[]; totalElements: number; totalPages: number; number: number }
+export interface Pagina<T> {
+  content: T[]
+  totalElements: number
+  totalPages: number
+  number: number
+}

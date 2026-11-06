@@ -45,7 +45,7 @@ async function request<T>(path: string, options?: RequestInit): Promise<T> {
   // Aceita `application/json` e também `application/problem+json`, usado pelos erros ProblemDetail (RFC 7807).
   const contentType = response.headers.get('content-type') ?? ''
   const body = /[/+]json\b/.test(contentType)
-    ? await response.json() as { detail?: string; message?: string }
+    ? ((await response.json()) as { detail?: string; message?: string })
     : undefined
 
   if (!response.ok) {

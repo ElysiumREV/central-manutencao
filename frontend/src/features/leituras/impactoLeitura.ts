@@ -1,6 +1,11 @@
 import type { Plano, StatusPlano } from '../../api/tipos'
 
-export interface MudancaStatus { plano: string; de: StatusPlano; para: StatusPlano; horasRestantes: number }
+export interface MudancaStatus {
+  plano: string
+  de: StatusPlano
+  para: StatusPlano
+  horasRestantes: number
+}
 
 /**
  * Compara os planos do equipamento antes e depois de uma leitura e devolve os que mudaram de situação.

@@ -40,19 +40,25 @@ const titulos: Record<string, string> = {
 function App() {
   const queryClient = useQueryClient()
   // Sem credenciais em memória já começa anônimo; só há o que verificar quando existem credenciais.
-  const [estadoAutenticacao, setEstadoAutenticacao] = useState<'verificando' | 'anonimo' | 'autenticado'>(
-    () => possuiCredenciais() ? 'verificando' : 'anonimo')
+  const [estadoAutenticacao, setEstadoAutenticacao] = useState<'verificando' | 'anonimo' | 'autenticado'>(() =>
+    possuiCredenciais() ? 'verificando' : 'anonimo',
+  )
 
   useEffect(() => {
     if (!possuiCredenciais()) return
     let ativo = true
-    api.get<{ usuario: string }>('/api/v1/auth/session')
-      .then(() => { if (ativo) setEstadoAutenticacao('autenticado') })
+    api
+      .get<{ usuario: string }>('/api/v1/auth/session')
+      .then(() => {
+        if (ativo) setEstadoAutenticacao('autenticado')
+      })
       .catch(() => {
         limparCredenciais()
         if (ativo) setEstadoAutenticacao('anonimo')
       })
-    return () => { ativo = false }
+    return () => {
+      ativo = false
+    }
   }, [])
 
   function sair() {
@@ -74,10 +80,14 @@ function AppShell({ aoSair }: { aoSair: () => void }) {
 
   return (
     <div className="app-shell">
-      {menuAberto && <button className="drawer-backdrop" aria-label="Fechar menu" onClick={() => setMenuAberto(false)} />}
+      {menuAberto && (
+        <button className="drawer-backdrop" aria-label="Fechar menu" onClick={() => setMenuAberto(false)} />
+      )}
       <aside className={`sidebar ${menuAberto ? 'sidebar--open' : ''}`}>
         <div className="brand">
-          <div className="brand-mark" aria-hidden="true">M</div>
+          <div className="brand-mark" aria-hidden="true">
+            M
+          </div>
           <div>
             <strong>Manutenção</strong>
             <span>Central de monitoramento</span>
@@ -89,7 +99,7 @@ function AppShell({ aoSair }: { aoSair: () => void }) {
 
         <span className="nav-caption">MENU PRINCIPAL</span>
         <nav className="navigation" aria-label="Navegação principal">
-          {navegacao.map((item) => (
+          {navegacao.map(item => (
             <NavLink
               key={item.rota}
               to={item.rota}
@@ -119,12 +129,26 @@ function AppShell({ aoSair }: { aoSair: () => void }) {
             <h1>{titulo}</h1>
           </div>
           <div className="topbar-actions">
-            <button className="quick-reading-button" onClick={() => setLeituraRapida(true)} aria-label="Registrar leitura"><AddRounded /> <span>Leitura</span></button>
-            <a className="api-link" href="http://localhost:8080/swagger-ui.html" target="_blank" rel="noreferrer"
-              title="Documentação da API (Swagger), abre em nova aba" aria-label="Documentação da API, abre em nova aba">
+            <button
+              className="quick-reading-button"
+              onClick={() => setLeituraRapida(true)}
+              aria-label="Registrar leitura"
+            >
+              <AddRounded /> <span>Leitura</span>
+            </button>
+            <a
+              className="api-link"
+              href="http://localhost:8080/swagger-ui.html"
+              target="_blank"
+              rel="noreferrer"
+              title="Documentação da API (Swagger), abre em nova aba"
+              aria-label="Documentação da API, abre em nova aba"
+            >
               <OpenInNewRounded /> <span>API</span>
             </a>
-            <button className="logout-button" onClick={aoSair}><LogoutOutlined /> Sair</button>
+            <button className="logout-button" onClick={aoSair}>
+              <LogoutOutlined /> Sair
+            </button>
           </div>
         </header>
 

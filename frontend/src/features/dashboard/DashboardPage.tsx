@@ -32,9 +32,10 @@ export default function DashboardPage() {
   // Vencidas e próximas juntas, já ordenadas pelo backend do menor restante (mais atrasado) para o maior.
   const alertasQuery = useQuery({
     queryKey: ['alertas', 'painel', filtro],
-    queryFn: () => api.get<Pagina<Alerta>>(`/api/v1/alertas?size=${ALERTAS_NO_PAINEL}${filtro ? `&nivel=${filtro}` : ''}`),
+    queryFn: () =>
+      api.get<Pagina<Alerta>>(`/api/v1/alertas?size=${ALERTAS_NO_PAINEL}${filtro ? `&nivel=${filtro}` : ''}`),
   })
-  const alternarFiltro = (nivel: Exclude<FiltroAlerta, null>) => setFiltro(atual => atual === nivel ? null : nivel)
+  const alternarFiltro = (nivel: Exclude<FiltroAlerta, null>) => setFiltro(atual => (atual === nivel ? null : nivel))
 
   if (isPending) return <LoadingDashboard />
   if (isError) {
@@ -44,7 +45,9 @@ export default function DashboardPage() {
         <div>
           <h2>Não foi possível carregar os dados</h2>
           <p>{error.message}</p>
-          <button className="button button--secondary" onClick={() => void refetch()}>Tentar novamente</button>
+          <button className="button button--secondary" onClick={() => void refetch()}>
+            Tentar novamente
+          </button>
         </div>
       </section>
     )
@@ -52,15 +55,38 @@ export default function DashboardPage() {
 
   // Vencidas e Próximas filtram a tabela abaixo; Em dia e Agendadas levam às telas correspondentes.
   const cards: KpiCardProps[] = [
-    { label: 'Vencidas', value: data.planosVencidos, tone: 'red', hint: filtro === 'VENCIDA' ? 'Filtrando a tabela' : 'Precisam de atenção', ativo: filtro === 'VENCIDA', aoClicar: () => alternarFiltro('VENCIDA') },
-    { label: 'Próximas', value: data.planosProximos, tone: 'amber', hint: filtro === 'PROXIMA' ? 'Filtrando a tabela' : 'Dentro da antecedência', ativo: filtro === 'PROXIMA', aoClicar: () => alternarFiltro('PROXIMA') },
+    {
+      label: 'Vencidas',
+      value: data.planosVencidos,
+      tone: 'red',
+      hint: filtro === 'VENCIDA' ? 'Filtrando a tabela' : 'Precisam de atenção',
+      ativo: filtro === 'VENCIDA',
+      aoClicar: () => alternarFiltro('VENCIDA'),
+    },
+    {
+      label: 'Próximas',
+      value: data.planosProximos,
+      tone: 'amber',
+      hint: filtro === 'PROXIMA' ? 'Filtrando a tabela' : 'Dentro da antecedência',
+      ativo: filtro === 'PROXIMA',
+      aoClicar: () => alternarFiltro('PROXIMA'),
+    },
     { label: 'Em dia', value: data.planosEmDia, tone: 'green', hint: 'Dentro do intervalo', rota: '/planos' },
-    { label: 'Agendadas', value: data.manutencoesAgendadasProximosSeteDias, tone: 'blue', hint: 'Próximos 7 dias', rota: '/manutencoes' },
+    {
+      label: 'Agendadas',
+      value: data.manutencoesAgendadasProximosSeteDias,
+      tone: 'blue',
+      hint: 'Próximos 7 dias',
+      rota: '/manutencoes',
+    },
   ]
   const alertas = alertasQuery.data
-  const descricaoTabela = filtro === 'VENCIDA' ? 'Somente planos vencidos, do maior atraso para o menor.'
-    : filtro === 'PROXIMA' ? 'Somente planos dentro da antecedência de alerta.'
-      : 'Vencidos e próximos do vencimento, do maior atraso para o menor.'
+  const descricaoTabela =
+    filtro === 'VENCIDA'
+      ? 'Somente planos vencidos, do maior atraso para o menor.'
+      : filtro === 'PROXIMA'
+        ? 'Somente planos dentro da antecedência de alerta.'
+        : 'Vencidos e próximos do vencimento, do maior atraso para o menor.'
 
   return (
     <div className="dashboard-page">
@@ -70,14 +96,20 @@ export default function DashboardPage() {
           <h2>Visão geral</h2>
           <p className="page-description">Acompanhe os vencimentos e as próximas intervenções dos equipamentos.</p>
         </div>
-        <button className="button button--secondary refresh-button" onClick={() => void refetch()} disabled={isFetching}>
+        <button
+          className="button button--secondary refresh-button"
+          onClick={() => void refetch()}
+          disabled={isFetching}
+        >
           <RefreshRounded className={isFetching ? 'spin' : ''} />
           Atualizar
         </button>
       </div>
 
       <section className="kpi-grid" aria-label="Resumo dos planos e manutenções">
-        {cards.map((card) => <KpiCard key={card.label} {...card} />)}
+        {cards.map(card => (
+          <KpiCard key={card.label} {...card} />
+        ))}
       </section>
 
       <div className="dashboard-grid">
@@ -92,10 +124,14 @@ export default function DashboardPage() {
           {alertasQuery.isError ? (
             <div className="panel-inline-state" role="alert">
               <span>Não foi possível carregar os alertas.</span>
-              <button className="button button--secondary" onClick={() => void alertasQuery.refetch()}>Tentar novamente</button>
+              <button className="button button--secondary" onClick={() => void alertasQuery.refetch()}>
+                Tentar novamente
+              </button>
             </div>
           ) : !alertas ? (
-            <div className="panel-inline-state" aria-busy="true">Carregando alertas…</div>
+            <div className="panel-inline-state" aria-busy="true">
+              Carregando alertas…
+            </div>
           ) : (
             <>
               <AlertsTable
@@ -121,17 +157,28 @@ export default function DashboardPage() {
             <CalendarTodayOutlined className="panel-heading-icon" />
           </div>
           {data.proximasManutencoes.length === 0 ? (
-            <EmptyState title="Nenhuma manutenção próxima" text="Os agendamentos para os próximos dias aparecerão aqui." />
+            <EmptyState
+              title="Nenhuma manutenção próxima"
+              text="Os agendamentos para os próximos dias aparecerão aqui."
+            />
           ) : (
             <ul className="schedule-list">
-              {data.proximasManutencoes.map((item) => (
+              {data.proximasManutencoes.map(item => (
                 <li className="schedule-item" key={item.id}>
-                  <Link className="schedule-link" to="/manutencoes" aria-label={`Abrir manutenções: ${item.codigoEquipamento} ${item.nomeEquipamento}`}>
-                  <div className="schedule-date">{formatDate(item.dataAgendada)}</div>
-                  <div className="schedule-details">
-                    <strong>{item.codigoEquipamento} · {item.nomeEquipamento}</strong>
-                    <span>{item.nomePlano ?? 'Manutenção corretiva'} · {labelTipo(item.tipo)}</span>
-                  </div>
+                  <Link
+                    className="schedule-link"
+                    to="/manutencoes"
+                    aria-label={`Abrir manutenções: ${item.codigoEquipamento} ${item.nomeEquipamento}`}
+                  >
+                    <div className="schedule-date">{formatDate(item.dataAgendada)}</div>
+                    <div className="schedule-details">
+                      <strong>
+                        {item.codigoEquipamento} · {item.nomeEquipamento}
+                      </strong>
+                      <span>
+                        {item.nomePlano ?? 'Manutenção corretiva'} · {labelTipo(item.tipo)}
+                      </span>
+                    </div>
                   </Link>
                 </li>
               ))}
@@ -185,21 +232,33 @@ function KpiCard({ label, value, tone, hint, rota, aoClicar, ativo }: KpiCardPro
   )
   if (aoClicar) {
     return (
-      <button type="button" onClick={aoClicar} aria-pressed={ativo}
+      <button
+        type="button"
+        onClick={aoClicar}
+        aria-pressed={ativo}
         className={`kpi-card kpi-card--${tone} ${ativo ? 'kpi-card--active' : ''}`}
-        aria-label={`${label}: ${value}. ${ativo ? 'Remover filtro' : 'Filtrar alertas'}`}>
+        aria-label={`${label}: ${value}. ${ativo ? 'Remover filtro' : 'Filtrar alertas'}`}
+      >
         {conteudo}
       </button>
     )
   }
   return (
-    <NavLink to={rota ?? '/'} className={`kpi-card kpi-card--${tone}`} aria-label={`${label}: ${value}. Abrir ${rota === '/planos' ? 'planos de manutenção' : 'manutenções'}`}>
+    <NavLink
+      to={rota ?? '/'}
+      className={`kpi-card kpi-card--${tone}`}
+      aria-label={`${label}: ${value}. Abrir ${rota === '/planos' ? 'planos de manutenção' : 'manutenções'}`}
+    >
       {conteudo}
     </NavLink>
   )
 }
 
-function AlertsTable({ alerts, aoRegistrarLeitura, aoAgendar }: {
+function AlertsTable({
+  alerts,
+  aoRegistrarLeitura,
+  aoAgendar,
+}: {
   alerts: Alerta[]
   aoRegistrarLeitura: (alerta: Alerta) => void
   aoAgendar: (alerta: Alerta) => void
@@ -218,34 +277,54 @@ function AlertsTable({ alerts, aoRegistrarLeitura, aoAgendar }: {
             <th>Horímetro</th>
             <th>Restante</th>
             <th>Status</th>
-            <th><span className="visually-hidden">Ações</span></th>
+            <th>
+              <span className="visually-hidden">Ações</span>
+            </th>
           </tr>
         </thead>
         <tbody>
-          {alerts.map((alert) => (
+          {alerts.map(alert => (
             <tr key={alert.planoId}>
               <td>
-                <Link className="dashboard-item-link" to="/equipamentos" aria-label={`Abrir equipamentos: ${alert.codigoEquipamento} ${alert.nomeEquipamento}`}><strong className="equipment-code">{alert.codigoEquipamento}</strong>
-                <span className="cell-secondary">{alert.nomeEquipamento}</span>
+                <Link
+                  className="dashboard-item-link"
+                  to="/equipamentos"
+                  aria-label={`Abrir equipamentos: ${alert.codigoEquipamento} ${alert.nomeEquipamento}`}
+                >
+                  <strong className="equipment-code">{alert.codigoEquipamento}</strong>
+                  <span className="cell-secondary">{alert.nomeEquipamento}</span>
                 </Link>
               </td>
               <td>
-                <Link className="dashboard-item-link" to="/planos" aria-label={`Abrir planos: ${alert.nomePlano}`}><strong className="plan-name">{alert.nomePlano}</strong>
-                <span className="cell-secondary">Vence em {formatHours(alert.proximoVencimento)}</span>
-                <span className="cell-secondary">Referência: {formatCalendarDate(alert.dataReferencia)}</span>
+                <Link className="dashboard-item-link" to="/planos" aria-label={`Abrir planos: ${alert.nomePlano}`}>
+                  <strong className="plan-name">{alert.nomePlano}</strong>
+                  <span className="cell-secondary">Vence em {formatHours(alert.proximoVencimento)}</span>
+                  <span className="cell-secondary">Referência: {formatCalendarDate(alert.dataReferencia)}</span>
                 </Link>
               </td>
               <td>{formatHours(alert.horimetroAtual)}</td>
               <td className={alert.horasRestantes <= 0 ? 'remaining-overdue' : 'remaining-soon'}>
                 {formatHours(alert.horasRestantes)}
               </td>
-              <td><StatusBadge status={alert.status} /></td>
+              <td>
+                <StatusBadge status={alert.status} />
+              </td>
               <td>
                 <div className="row-actions">
-                  <button type="button" className="row-action" onClick={() => aoRegistrarLeitura(alert)} aria-label={`Registrar leitura de ${alert.codigoEquipamento}`}>
+                  <button
+                    type="button"
+                    className="row-action"
+                    onClick={() => aoRegistrarLeitura(alert)}
+                    aria-label={`Registrar leitura de ${alert.codigoEquipamento}`}
+                  >
                     <SpeedRounded /> Leitura
                   </button>
-                  <button type="button" className="row-action" onClick={() => aoAgendar(alert)} aria-label={`Agendar ${alert.nomePlano} de ${alert.codigoEquipamento}`}>
+                  <button
+                    type="button"
+                    className="row-action"
+                    onClick={() => aoAgendar(alert)}
+                    aria-label={`Agendar ${alert.nomePlano} de ${alert.codigoEquipamento}`}
+                  >
                     <EventRounded /> Agendar
                   </button>
                 </div>
@@ -262,7 +341,11 @@ function LoadingDashboard() {
   return (
     <div className="dashboard-page" aria-label="Carregando painel" aria-busy="true">
       <div className="loading-heading skeleton" />
-      <div className="kpi-grid">{[1, 2, 3, 4].map((item) => <div className="kpi-card skeleton" key={item} />)}</div>
+      <div className="kpi-grid">
+        {[1, 2, 3, 4].map(item => (
+          <div className="kpi-card skeleton" key={item} />
+        ))}
+      </div>
       <div className="loading-panels">
         <div className="panel skeleton" />
         <div className="panel skeleton" />
