@@ -655,3 +655,34 @@ O CSS continua todo em `App.css`. As regras do shell e do painel estão misturad
 - **README:** ganhou diagrama Mermaid, decisões de arquitetura, galeria de telas e melhorias futuras: página de detalhe do equipamento, testes de componente, CSS do painel separado e envio do `version` na edição.
 
 **Ressalva sobre o lock otimista:** o `AtualizarEquipamentoRequest` não recebe `version`. O `@Version` só protege gravações concorrentes de verdade, e não uma edição feita a partir de um formulário desatualizado.
+
+## Revisão final contra o enunciado (06/11/2026, noite)
+
+Teste ponta a ponta com Chromium headless, em um stack isolado com banco novo (`-p clone-teste`): 20 passos, todos passando. O script fica fora do repositório. Ele cobre:
+- login certo e errado;
+- os KPIs do seed;
+- cadastro de equipamento, inclusive código duplicado;
+- plano com antecedência inválida e plano válido;
+- leituras Em dia → Próxima → Vencida e leitura menor bloqueada;
+- agendamento pelo painel e bloqueio do duplicado;
+- conclusão com recálculo do vencimento;
+- registro de manutenção realizada;
+- agendamento e cancelamento de corretiva;
+- histórico de leituras;
+- inativação, que tira o equipamento dos alertas;
+- logout e cabeçalhos do Nginx.
+
+Problemas encontrados e corrigidos:
+- **Pop-up nativo no login (bug real):** com a senha errada, o 401 vinha com `WWW-Authenticate: Basic`, e o navegador abria o pop-up nativo de login, deixando a tela em "Verificando…". O `http.ts` agora envia `X-Requested-With: XMLHttpRequest`, e com isso o Spring Security responde 401 sem esse cabeçalho.
+- **Cache desatualizado:** Equipamentos e Planos só invalidavam a própria lista. Agora invalidam também as opções dos diálogos, os alertas e o painel.
+- **Registro de manutenção realizada:** faltava a tela para `POST /manutencoes/concluidas`. Foi criado o `RegistrarManutencaoDialog`, com o botão "Registrar realizada" na tela de Manutenções.
+- **Banco e configuração:**
+  - o PostgreSQL agora é publicado só em `127.0.0.1`, com porta configurável por `DB_PORT`;
+  - `APP_TIMEZONE` passou a ser repassado ao container;
+  - o `.env.example` foi completado;
+  - o Nginx ganhou cabeçalhos de segurança.
+- **`docs/telas.md`:** ganhou uma nota de status com as diferenças entre o planejado e o implementado.
+
+Pontos conhecidos que não foram mudados:
+- **Aviso do Spring Data** ao serializar `PageImpl` diretamente. Adotar `VIA_DTO` mudaria o JSON das páginas e quebraria o frontend.
+- **Agendamentos após inativação:** inativar um equipamento não cancela os agendamentos abertos dele.

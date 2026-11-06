@@ -2,6 +2,12 @@
 
 Documento de referência para wireframes (Figma) e backlog do frontend.
 
+> **Status (06/11/2026):** este é o documento de **planejamento**. A implementação seguiu o mapa abaixo, com estas diferenças:
+> - **Formulários em diálogos:** cadastro e edição de equipamento e de plano abrem em diálogo na própria lista, e não em rotas `/novo` e `/:id/editar`.
+> - **Detalhe do equipamento não implementado:** a página `/equipamentos/:id` ficou como melhoria futura. Por isso os planos são criados na tela **Planos**, com o equipamento escolhido no diálogo, e não dentro do detalhe (ver a decisão 2 abaixo).
+> - **Ações a partir dos alertas:** o painel ganhou ações em cada alerta ("Leitura" e "Agendar"), um atalho "+ Leitura" na barra superior e filtro pelos cards de vencidas e próximas.
+> - **Registro de manutenção realizada:** existe um diálogo para registrar uma manutenção já executada, sem agendamento prévio.
+
 ## Mapa de navegação
 
 | Rota | Tela | Figma |
@@ -115,5 +121,5 @@ Documento de referência para wireframes (Figma) e backlog do frontend.
 ## Decisões adotadas
 
 1. Precisão do horímetro: uma casa decimal (`DECIMAL(10,1)`).
-2. Planos criados dentro do detalhe do equipamento.
+2. ~~Planos criados dentro do detalhe do equipamento.~~ Como o detalhe não foi implementado, os planos são criados na tela Planos.
 3. Opcionais, só depois do núcleo pronto: card "Sem leitura há mais de 7 dias", gráfico de leituras, previsão de vencimento por média de uso.
