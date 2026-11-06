@@ -9,6 +9,7 @@ import com.elysium.central.manutencao.equipamento.StatusEquipamento;
 import com.elysium.central.manutencao.leitura.LeituraService;
 import com.elysium.central.manutencao.leitura.RegistrarLeituraRequest;
 import com.elysium.central.manutencao.manutencao.AgendarManutencaoRequest;
+import com.elysium.central.manutencao.manutencao.CancelarManutencaoRequest;
 import com.elysium.central.manutencao.manutencao.ManutencaoService;
 import com.elysium.central.manutencao.manutencao.RegistrarManutencaoRequest;
 import com.elysium.central.manutencao.manutencao.StatusManutencao;
@@ -118,6 +119,68 @@ class RegrasManutencaoIntegrationTest {
         assertEquals(HttpStatus.UNPROCESSABLE_ENTITY, erro.getStatusCode());
         assertEquals(new BigDecimal("1400.0"), equipamentoRepository.findById(equipamento.getId())
                 .orElseThrow().getHorimetroAtual());
+    }
+
+    @Test
+    void rejeitaLeituraComDataNoFuturo() {
+        Equipamento equipamento = criarEquipamento("1400.0");
+
+        ResponseStatusException erro = assertThrows(ResponseStatusException.class,
+                () -> leituraService.registrar(equipamento.getId(), new RegistrarLeituraRequest(
+                        new BigDecimal("1410.0"), Instant.now().plusSeconds(3600), "Operador", null)));
+
+        assertEquals(HttpStatus.UNPROCESSABLE_ENTITY, erro.getStatusCode());
+    }
+
+    @Test
+    void aceitaLeituraIgualAoHorimetroAtual() {
+        Equipamento equipamento = criarEquipamento("1400.0");
+
+        var leitura = leituraService.registrar(equipamento.getId(), new RegistrarLeituraRequest(
+                new BigDecimal("1400.0"), Instant.now().minusSeconds(60), "Operador", null));
+
+        assertEquals(new BigDecimal("1400.0"), leitura.valor());
+    }
+
+    @Test
+    void rejeitaLeituraParaEquipamentoInativo() {
+        Equipamento equipamento = criarEquipamento("1400.0");
+        equipamento.inativar();
+        equipamentoRepository.saveAndFlush(equipamento);
+
+        ResponseStatusException erro = assertThrows(ResponseStatusException.class,
+                () -> leituraService.registrar(equipamento.getId(), new RegistrarLeituraRequest(
+                        new BigDecimal("1410.0"), Instant.now().minusSeconds(60), "Operador", null)));
+
+        assertEquals(HttpStatus.UNPROCESSABLE_ENTITY, erro.getStatusCode());
+    }
+
+    @Test
+    void naoAgendaManutencaoParaPlanoInativo() {
+        Equipamento equipamento = criarEquipamento("1400.0");
+        var plano = planoService.criar(new CriarPlanoRequest(equipamento.getId(), "Troca de óleo",
+                new BigDecimal("250.0"), new BigDecimal("50.0"), new BigDecimal("1250.0"), false));
+
+        ResponseStatusException erro = assertThrows(ResponseStatusException.class,
+                () -> manutencaoService.agendar(new AgendarManutencaoRequest(equipamento.getId(), plano.id(),
+                        TipoManutencao.PREVENTIVA, LocalDate.now().plusDays(1), "Oficina", null)));
+
+        assertEquals(HttpStatus.UNPROCESSABLE_ENTITY, erro.getStatusCode());
+    }
+
+    @Test
+    void permiteNovoAgendamentoDepoisDeCancelarOAnterior() {
+        Equipamento equipamento = criarEquipamento("1400.0");
+        var plano = planoService.criar(criarPlano(equipamento, "1250.0"));
+        var request = new AgendarManutencaoRequest(equipamento.getId(), plano.id(),
+                TipoManutencao.PREVENTIVA, LocalDate.now().plusDays(1), "Oficina", null);
+        var primeiro = manutencaoService.agendar(request);
+
+        var cancelada = manutencaoService.cancelar(primeiro.id(), new CancelarManutencaoRequest("Reagendada"));
+        var segundo = manutencaoService.agendar(request);
+
+        assertEquals(StatusManutencao.CANCELADA, cancelada.status());
+        assertEquals(StatusManutencao.AGENDADA, segundo.status());
     }
 
     private Equipamento criarEquipamento(String horimetro) {
