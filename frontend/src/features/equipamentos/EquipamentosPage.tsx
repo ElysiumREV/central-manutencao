@@ -79,15 +79,24 @@ export default function EquipamentosPage() {
       })
     },
     onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: ['equipamentos'] })
+      await atualizarDadosRelacionados()
       fecharFormulario()
     },
   })
 
+  // Equipamento novo, editado ou inativado muda os selects dos diálogos, os planos, os alertas e o painel.
+  async function atualizarDadosRelacionados() {
+    await Promise.all(
+      ['equipamentos', 'equipamentos-opcoes', 'planos', 'planos-opcoes', 'alertas', 'dashboard-resumo'].map(chave =>
+        queryClient.invalidateQueries({ queryKey: [chave] }),
+      ),
+    )
+  }
+
   const inativarMutation = useMutation({
     mutationFn: (id: number) => api.delete(`/api/v1/equipamentos/${id}`),
     onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: ['equipamentos'] })
+      await atualizarDadosRelacionados()
       setConfirmarInativacao(null)
     },
   })

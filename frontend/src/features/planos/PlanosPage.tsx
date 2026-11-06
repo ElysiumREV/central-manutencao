@@ -71,17 +71,23 @@ export default function PlanosPage() {
           })
     },
     onSuccess: async () => {
-      await client.invalidateQueries({ queryKey: ['planos'] })
-      await client.invalidateQueries({ queryKey: ['dashboard-resumo'] })
+      await atualizarDadosRelacionados()
       fechar()
     },
   })
+  // Plano criado, editado, ativado ou desativado muda os alertas, o painel e o select de planos do agendamento.
+  async function atualizarDadosRelacionados() {
+    await Promise.all(
+      ['planos', 'planos-opcoes', 'planos-impacto', 'alertas', 'dashboard-resumo'].map(chave =>
+        client.invalidateQueries({ queryKey: [chave] }),
+      ),
+    )
+  }
   const alternar = useMutation({
     mutationFn: ({ plano, ativo }: { plano: Plano; ativo: boolean }) =>
       api.patch<Plano>(`/api/v1/planos/${plano.id}/status?ativo=${ativo}`),
     onSuccess: async () => {
-      await client.invalidateQueries({ queryKey: ['planos'] })
-      await client.invalidateQueries({ queryKey: ['dashboard-resumo'] })
+      await atualizarDadosRelacionados()
     },
   })
 
