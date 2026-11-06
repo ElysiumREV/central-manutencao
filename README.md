@@ -92,11 +92,12 @@ Acesse <http://localhost:5173>. O Vite já repassa `/api` para `http://localhost
 
 ## Testes
 
-O backend possui 24 testes. Os unitários cobrem o cálculo de status nos limites (em dia, próxima, vencida) e o ciclo do plano. Os de integração, com PostgreSQL 16 via Testcontainers, cobrem:
+O backend possui 25 testes. Os unitários cobrem o cálculo de status nos limites (em dia, próxima, vencida) e o ciclo do plano. Os de integração, com PostgreSQL 16 via Testcontainers, cobrem:
 - leituras regressivas, retroativas, futuras ou em equipamento inativo;
 - conclusão preventiva recalculando o vencimento;
 - agendamento duplicado, para plano inativo ou com data no passado;
-- o contrato HTTP de erros (400 com campos inválidos ou ordenação inválida, 409 e 401) e a ordenação da lista de manutenções.
+- o contrato HTTP de erros (400 com campos inválidos ou ordenação inválida, 409 e 401) e a ordenação da lista de manutenções;
+- o contrato OpenAPI do qual o frontend gera seus tipos.
 
 Docker precisa estar disponível para a suíte de integração.
 
@@ -105,13 +106,25 @@ cd backend
 ./mvnw test
 ```
 
-Build do frontend:
+O frontend usa Vitest e Testing Library (10 testes): formatadores, o selo de status e o cálculo do impacto de uma leitura nos planos.
 
 ```bash
 cd frontend
 npm ci
+npm test
 npm run build
 ```
+
+### Tipos da API no frontend
+
+Os tipos TypeScript das respostas vêm do OpenAPI do backend, em `frontend/src/api/schema.d.ts`, com apelidos em `frontend/src/api/tipos.ts`. O arquivo gerado é versionado, então o frontend compila sem a API no ar. Depois de mudar um DTO no backend, com a API rodando:
+
+```bash
+cd frontend
+npm run gen:api
+```
+
+Se o frontend usar um campo que mudou, o `tsc` aponta o erro.
 
 ## Organização
 
@@ -130,4 +143,4 @@ A autenticação atual usa um único usuário em memória, configurável por amb
 ## Próximas melhorias
 
 - Persistência e administração de usuários, autorização por papéis e HTTPS em implantação.
-- Testes de componentes e geração dos tipos TypeScript a partir do OpenAPI.
+- Usar os tipos gerados também nas telas de cadastro, que ainda têm interfaces próprias, e cobrir os fluxos de tela com testes de componente.

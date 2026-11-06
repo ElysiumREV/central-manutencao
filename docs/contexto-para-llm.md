@@ -620,3 +620,25 @@ A suíte tem agora 22 testes, todos passando. `tsc -b` e ESLint da página passa
 - `shared/formatters.ts` (`formatHours`, `formatDate`, `formatCalendarDate`).
 
 O CSS continua todo em `App.css`. As regras do shell e do painel estão misturadas, inclusive nos media queries, e separá-las exigiria conferência visual; ficou para depois. As outras páginas ainda têm seus próprios formatadores locais, que podem ser unificados com `shared/formatters.ts` mais tarde.
+
+## Tipos gerados do OpenAPI, Vitest e limpeza de dependências (06/11/2026)
+
+**Contrato OpenAPI:** o springdoc declarava todo campo de resposta como opcional (`id?: number`), e os tipos gerados ficavam inúteis. Duas mudanças:
+- `shared/OpenApiConfig` (um `OpenApiCustomizer`) marca como `required` todas as propriedades dos schemas que não são `*Request`. O Jackson sempre envia todos os campos dos records.
+- Os campos que podem ser nulos (colunas sem `NOT NULL`) receberam `@Schema(nullable = true)` nos records:
+  - em `EquipamentoResponse`: `fabricante`, `modelo`, `numeroSerie`, `localizacao` e `dataUltimaLeitura`;
+  - em `LeituraResponse`: `observacao`;
+  - em `ManutencaoResponse`: `planoId`, `nomePlano`, `dataAgendada`, `dataExecucao`, `horimetroExecucao`, `responsavel` e `observacoes`.
+- Com OpenAPI 3.1, `nullable` vira `type: [..., "null"]`.
+- `ContratoOpenApiIntegrationTest` protege isso. O backend tem 25 testes.
+
+**Frontend:**
+- `npm run gen:api` gera `src/api/schema.d.ts`, que é versionado. `src/api/tipos.ts` dá nomes do domínio aos tipos (`Equipamento`, `Plano`, `Manutencao`, `Alerta`, `DashboardResumo`, `StatusPlano`, `TipoManutencao`, `Pagina<T>`).
+- Usam os tipos gerados: o painel, os dois diálogos e o `StatusBadge`. As telas de cadastro ainda têm interfaces próprias; migrá-las é melhoria futura.
+
+**Vitest:**
+- `npm test` roda `vitest run`, com jsdom e o setup `src/test/setup.ts` (jest-dom e cleanup).
+- São 10 testes: formatadores, `StatusBadge` e `calcularMudancas`.
+- `calcularMudancas` é a função pura extraída do diálogo de leitura, em `features/leituras/impactoLeitura.ts`.
+
+**Dependências removidas:** `react-hook-form`, `zod` e `@hookform/resolvers`, que não eram usadas. Os formulários continuam com estado controlado.
