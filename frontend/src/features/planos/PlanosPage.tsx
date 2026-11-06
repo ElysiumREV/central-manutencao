@@ -38,6 +38,10 @@ export default function PlanosPage() {
   const salvar = useMutation({
     mutationFn: () => {
       const dados = { nome: form.nome, intervaloHoras: Number(form.intervaloHoras), antecedenciaAlertaHoras: Number(form.antecedenciaAlertaHoras), ativo: form.ativo }
+      // Mesma regra do backend (PlanoService e CHECK do banco), checada aqui para dar retorno sem ida ao servidor.
+      if (dados.antecedenciaAlertaHoras >= dados.intervaloHoras) {
+        return Promise.reject(new Error(`A antecedência do alerta (${form.antecedenciaAlertaHoras} h) deve ser menor que o intervalo (${form.intervaloHoras} h). Se fosse igual ou maior, o plano entraria em alerta logo após cada manutenção.`))
+      }
       return editando
         ? api.put<Plano>(`/api/v1/planos/${editando.id}`, dados)
         : api.post<Plano>('/api/v1/planos', { ...dados, equipamentoId: Number(form.equipamentoId), horimetroUltimaExecucao: Number(form.horimetroUltimaExecucao) })

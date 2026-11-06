@@ -73,7 +73,8 @@ public class PlanoService {
             BigDecimal ultimaExecucao, Equipamento equipamento) {
         if (antecedencia.compareTo(intervalo) >= 0) {
             throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_ENTITY,
-                    "A antecedência do alerta deve ser menor que o intervalo do plano.");
+                    "A antecedência do alerta deve ser menor que o intervalo do plano. "
+                            + "Se fosse igual ou maior, o plano entraria em alerta logo após cada manutenção.");
         }
         if (ultimaExecucao.compareTo(equipamento.getHorimetroAtual()) > 0) {
             throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_ENTITY,
