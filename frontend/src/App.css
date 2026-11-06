@@ -314,6 +314,10 @@
 }
 
 .kpi-card {
+  /* Flex em coluna para o card-botão (filtro) alinhar igual ao card-link: <button> centraliza o conteúdo. */
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
   min-height: 128px;
   padding: 18px 19px;
   border: 1px solid #e8edf0;
@@ -458,7 +462,7 @@
 }
 
 .alerts-table th {
-  padding: 10px 15px;
+  padding: 10px 11px;
   color: #8793a1;
   background: #fbfcfd;
   font-size: 10px;
@@ -466,7 +470,7 @@
 }
 
 .alerts-table td {
-  padding: 12px 15px;
+  padding: 12px 11px;
   border-top: 1px solid #f0f2f4;
   color: #526273;
   font-size: 11px;
@@ -1051,14 +1055,23 @@ button.kpi-card {
   height: 17px;
 }
 
+/* O nome do plano pode quebrar linha; as demais colunas continuam em uma linha só. */
+.alerts-table td:nth-child(2) {
+  min-width: 160px;
+  white-space: normal;
+}
+
 .row-actions {
+  /* Empilhadas para a tabela caber no painel em telas de notebook sem rolagem horizontal. */
   display: flex;
-  justify-content: flex-end;
-  gap: 6px;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 5px;
 }
 
 .row-action {
-  min-height: 30px;
+  min-height: 28px;
+  justify-content: flex-start;
   padding: 0 9px;
   display: inline-flex;
   align-items: center;
