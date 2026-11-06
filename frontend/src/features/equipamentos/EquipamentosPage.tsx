@@ -4,7 +4,7 @@ import AddRounded from '@mui/icons-material/AddRounded'
 import EditOutlined from '@mui/icons-material/EditOutlined'
 import SearchRounded from '@mui/icons-material/SearchRounded'
 import CloseRounded from '@mui/icons-material/CloseRounded'
-import { ApiError, api } from '../../api/http'
+import { api } from '../../api/http'
 import './EquipamentosPage.css'
 
 type StatusEquipamento = 'ATIVO' | 'EM_MANUTENCAO' | 'INATIVO'
@@ -315,7 +315,7 @@ function formatarHoras(valor: number) {
   return `${new Intl.NumberFormat('pt-BR', { maximumFractionDigits: 1 }).format(valor)} h`
 }
 
+// A API devolve a explicação em `detail` (ProblemDetail); o cliente HTTP já a coloca em `message`.
 function mensagemErro(erro: Error) {
-  if (erro instanceof ApiError && erro.status === 409) return 'Já existe um equipamento com este código.'
   return erro.message
 }
