@@ -12,6 +12,7 @@ import com.elysium.central.manutencao.plano.StatusPlano;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.util.List;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -20,13 +21,16 @@ import org.springframework.transaction.annotation.Transactional;
 @Transactional(readOnly = true)
 public class DashboardService {
 
-    private static final ZoneId FUSO_NEGOCIO = ZoneId.of("America/Sao_Paulo");
     private final AlertaRepository alertaRepository;
     private final ManutencaoRepository manutencaoRepository;
+    /** Mesmo fuso usado pelas regras de agendamento (`app.zona-horaria`). */
+    private final ZoneId fusoNegocio;
 
-    public DashboardService(AlertaRepository alertaRepository, ManutencaoRepository manutencaoRepository) {
+    public DashboardService(AlertaRepository alertaRepository, ManutencaoRepository manutencaoRepository,
+            @Value("${app.zona-horaria:America/Sao_Paulo}") String fusoNegocio) {
         this.alertaRepository = alertaRepository;
         this.manutencaoRepository = manutencaoRepository;
+        this.fusoNegocio = ZoneId.of(fusoNegocio);
     }
 
     public DashboardResumoResponse resumo() {
@@ -40,7 +44,7 @@ public class DashboardService {
             else emDia++;
         }
 
-        LocalDate hoje = LocalDate.now(FUSO_NEGOCIO);
+        LocalDate hoje = LocalDate.now(fusoNegocio);
         LocalDate limite = hoje.plusDays(7);
         long agendadas = manutencaoRepository.countByStatusAndDataAgendadaBetween(
                 StatusManutencao.AGENDADA, hoje, limite);

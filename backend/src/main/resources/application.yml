@@ -30,6 +30,7 @@ server:
     include-message: never
 
 app:
+  zona-horaria: ${APP_TIMEZONE:America/Sao_Paulo}   # define o "hoje" das regras de data
   security:
     username: ${APP_AUTH_USERNAME}
     password: ${APP_AUTH_PASSWORD}

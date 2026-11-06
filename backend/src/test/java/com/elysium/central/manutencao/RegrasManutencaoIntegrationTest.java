@@ -21,6 +21,7 @@ import com.elysium.central.manutencao.plano.PlanoService;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.time.ZoneId;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -181,6 +182,31 @@ class RegrasManutencaoIntegrationTest {
 
         assertEquals(StatusManutencao.CANCELADA, cancelada.status());
         assertEquals(StatusManutencao.AGENDADA, segundo.status());
+    }
+
+    @Test
+    void rejeitaAgendamentoComDataNoPassado() {
+        Equipamento equipamento = criarEquipamento("1400.0");
+        var plano = planoService.criar(criarPlano(equipamento, "1250.0"));
+        LocalDate ontem = LocalDate.now(ZoneId.of("America/Sao_Paulo")).minusDays(1);
+
+        ResponseStatusException erro = assertThrows(ResponseStatusException.class,
+                () -> manutencaoService.agendar(new AgendarManutencaoRequest(equipamento.getId(), plano.id(),
+                        TipoManutencao.PREVENTIVA, ontem, "Oficina", null)));
+
+        assertEquals(HttpStatus.UNPROCESSABLE_ENTITY, erro.getStatusCode());
+    }
+
+    @Test
+    void aceitaAgendamentoParaHoje() {
+        Equipamento equipamento = criarEquipamento("1400.0");
+        var plano = planoService.criar(criarPlano(equipamento, "1250.0"));
+        LocalDate hoje = LocalDate.now(ZoneId.of("America/Sao_Paulo"));
+
+        var agendada = manutencaoService.agendar(new AgendarManutencaoRequest(equipamento.getId(), plano.id(),
+                TipoManutencao.PREVENTIVA, hoje, "Oficina", null));
+
+        assertEquals(StatusManutencao.AGENDADA, agendada.status());
     }
 
     private Equipamento criarEquipamento(String horimetro) {

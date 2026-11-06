@@ -7,6 +7,9 @@ import com.elysium.central.manutencao.plano.PlanoManutencao;
 import com.elysium.central.manutencao.plano.PlanoRepository;
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.time.LocalDate;
+import java.time.ZoneId;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -22,17 +25,28 @@ public class ManutencaoService {
     private final ManutencaoRepository manutencaoRepository;
     private final EquipamentoRepository equipamentoRepository;
     private final PlanoRepository planoRepository;
+    /**
+     * Fuso da operação, usado para saber qual é "hoje". O servidor roda em UTC; sem isso, entre 21h e
+     * meia-noite no Brasil o servidor já estaria no dia seguinte e recusaria um agendamento para hoje.
+     */
+    private final ZoneId zonaOperacao;
 
     public ManutencaoService(ManutencaoRepository manutencaoRepository,
-            EquipamentoRepository equipamentoRepository, PlanoRepository planoRepository) {
+            EquipamentoRepository equipamentoRepository, PlanoRepository planoRepository,
+            @Value("${app.zona-horaria:America/Sao_Paulo}") String zonaOperacao) {
         this.manutencaoRepository = manutencaoRepository;
         this.equipamentoRepository = equipamentoRepository;
         this.planoRepository = planoRepository;
+        this.zonaOperacao = ZoneId.of(zonaOperacao);
     }
 
     public ManutencaoResponse agendar(AgendarManutencaoRequest request) {
         Equipamento equipamento = obterEquipamento(request.equipamentoId());
         validarEquipamentoAtivo(equipamento);
+        if (request.dataAgendada().isBefore(LocalDate.now(zonaOperacao))) {
+            throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_ENTITY,
+                    "A data agendada não pode estar no passado.");
+        }
         PlanoManutencao plano = obterPlanoOpcional(request.planoId(), equipamento);
         validarPlanoPreventivo(request.tipo(), plano, true);
         if (plano != null && manutencaoRepository.existsByPlano_IdAndStatus(
