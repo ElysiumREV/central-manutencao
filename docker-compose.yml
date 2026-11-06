@@ -9,8 +9,9 @@ services:
       POSTGRES_DB: ${POSTGRES_DB:-manutencao}
       POSTGRES_USER: ${POSTGRES_USER:-manutencao}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-manutencao}
+    # Só em localhost: o banco não fica acessível pela rede. DB_PORT permite trocar a porta se a 5432 estiver ocupada.
     ports:
-      - "5432:5432"
+      - "127.0.0.1:${DB_PORT:-5432}:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
     healthcheck:
@@ -27,6 +28,7 @@ services:
       DB_URL: jdbc:postgresql://db:5432/${POSTGRES_DB:-manutencao}
       DB_USER: ${POSTGRES_USER:-manutencao}
       DB_PASSWORD: ${POSTGRES_PASSWORD:-manutencao}
+      APP_TIMEZONE: ${APP_TIMEZONE:-America/Sao_Paulo}
       APP_AUTH_USERNAME: ${APP_AUTH_USERNAME:-operador}
       APP_AUTH_PASSWORD: ${APP_AUTH_PASSWORD:-local-demo-password-change-me}
     depends_on:

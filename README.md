@@ -41,6 +41,10 @@ Abra:
 
 **Login de demonstração:** usuário `operador`; a senha é o valor padrão de `APP_AUTH_PASSWORD` em [`docker-compose.yml`](docker-compose.yml). Para alterá-las, defina `APP_AUTH_USERNAME` e `APP_AUTH_PASSWORD` no ambiente ou no arquivo `.env` antes de iniciar os serviços. Não use os valores de demonstração fora do ambiente local. O login do frontend usa HTTP Basic; a página solicita autenticação novamente após recarregar.
 
+As variáveis opcionais estão em [`.env.example`](.env.example). Copie para `.env` se quiser mudar credenciais, a porta do banco ou o fuso.
+
+**Portas usadas:** 3000 (frontend), 8080 (API) e 5432 (PostgreSQL, publicada só em `127.0.0.1`). Se a 5432 já estiver ocupada por um PostgreSQL local, defina `DB_PORT=5433` no `.env`; os containers continuam se falando pela rede interna.
+
 Para acompanhar os serviços:
 
 ```bash
@@ -91,7 +95,7 @@ Acesse <http://localhost:5173>. O Vite já repassa `/api` para `http://localhost
 - Planos preventivos associados a equipamentos, com intervalo e antecedência de alerta.
 - Registro e histórico de leituras de horímetro.
 - Cálculo de planos vencidos, próximos do vencimento e em dia.
-- Agendamento, conclusão e cancelamento de manutenções.
+- Agendamento, conclusão e cancelamento de manutenções, e registro direto de uma manutenção já realizada (corretiva ou preventiva), sem agendamento prévio.
 - Painel com indicadores (os cards de vencidas e próximas filtram a tabela), alertas com ações de registrar leitura e agendar, e próximas manutenções.
 - Ao registrar uma leitura, o sistema mostra quais planos mudaram de situação (ex.: Próxima → Vencida).
 - Lista de manutenções com escolha de ordem (padrão: prazo mais próximo).
@@ -172,7 +176,7 @@ Mais contexto e decisões estão em [`docs/contexto-para-llm.md`](docs/contexto-
 
 ## Segurança e escopo
 
-A autenticação atual usa um único usuário em memória, configurável por ambiente. É adequada à demonstração local do desafio, sem cadastro de usuários ou autorização por papéis. HTTP Basic não criptografa o transporte: qualquer implantação externa deve usar HTTPS e credenciais próprias. O healthcheck e os recursos do Swagger ficam públicos; chamadas aos endpoints de negócio exigem autenticação.
+A autenticação atual usa um único usuário em memória, configurável por ambiente. É adequada à demonstração local do desafio, sem cadastro de usuários ou autorização por papéis. HTTP Basic não criptografa o transporte: qualquer implantação externa deve usar HTTPS e credenciais próprias. O healthcheck e os recursos do Swagger ficam públicos; chamadas aos endpoints de negócio exigem autenticação. A senha é guardada com hash (BCrypt) e o frontend mantém as credenciais só em memória. O PostgreSQL é publicado apenas em `127.0.0.1`, e o Nginx envia cabeçalhos básicos de segurança (`X-Content-Type-Options`, `X-Frame-Options` e `Referrer-Policy`).
 
 ## Próximas melhorias
 
