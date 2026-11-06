@@ -86,14 +86,13 @@ const titulos: Record<string, string> = {
 
 function App() {
   const queryClient = useQueryClient()
-  const [estadoAutenticacao, setEstadoAutenticacao] = useState<'verificando' | 'anonimo' | 'autenticado'>('verificando')
+  // Sem credenciais em memória já começa anônimo; só há o que verificar quando existem credenciais.
+  const [estadoAutenticacao, setEstadoAutenticacao] = useState<'verificando' | 'anonimo' | 'autenticado'>(
+    () => possuiCredenciais() ? 'verificando' : 'anonimo')
 
   useEffect(() => {
+    if (!possuiCredenciais()) return
     let ativo = true
-    if (!possuiCredenciais()) {
-      setEstadoAutenticacao('anonimo')
-      return () => { ativo = false }
-    }
     api.get<{ usuario: string }>('/api/v1/auth/session')
       .then(() => { if (ativo) setEstadoAutenticacao('autenticado') })
       .catch(() => {
