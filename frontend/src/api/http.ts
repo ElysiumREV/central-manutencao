@@ -34,6 +34,9 @@ async function request<T>(path: string, options?: RequestInit): Promise<T> {
   const response = await fetch(path, {
     ...options,
     headers: {
+      // Sem este cabeçalho, o 401 do Spring Security vem com `WWW-Authenticate: Basic` e o navegador
+      // abre o pop-up nativo de login por cima da tela, em vez de deixar o app mostrar o erro.
+      'X-Requested-With': 'XMLHttpRequest',
       ...(authorization ? { Authorization: authorization } : {}),
       ...(options?.body ? { 'Content-Type': 'application/json' } : {}),
       ...options?.headers,
