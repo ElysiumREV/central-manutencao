@@ -1,13 +1,9 @@
 import { useState, type FormEvent } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { api } from '../../api/http'
+import type { Equipamento, Manutencao, Pagina, Plano, TipoManutencao as Tipo } from '../../api/tipos'
 import './ManutencoesPage.css'
 
-type Tipo = 'PREVENTIVA' | 'CORRETIVA'
-interface Equipamento { id: number; codigo: string; nome: string; status: string }
-interface Plano { id: number; nome: string }
-interface Agendada { id: number; planoId: number | null; dataAgendada: string | null }
-interface Pagina<T> { content: T[] }
 
 interface Props {
   /** Equipamento e plano já escolhidos (ex.: ao abrir a partir de um alerta do painel). */
@@ -30,7 +26,7 @@ export default function AgendarManutencaoDialog({ equipamentoId, planoId, aoFech
     tipo: 'PREVENTIVA' as Tipo, dataAgendada: hojeLocal(), responsavel: '', observacoes: '',
   })
 
-  const equipamentosQuery = useQuery({ queryKey: ['equipamentos-opcoes'], queryFn: () => api.get<Pagina<Equipamento & { horimetroAtual: number }>>('/api/v1/equipamentos?size=100&sort=nome,asc') })
+  const equipamentosQuery = useQuery({ queryKey: ['equipamentos-opcoes'], queryFn: () => api.get<Pagina<Equipamento>>('/api/v1/equipamentos?size=100&sort=nome,asc') })
   const planosQuery = useQuery({
     queryKey: ['planos-opcoes', form.equipamentoId],
     queryFn: () => api.get<Pagina<Plano>>(`/api/v1/planos?equipamentoId=${form.equipamentoId}&ativo=true&size=100&sort=nome,asc`),
@@ -38,7 +34,7 @@ export default function AgendarManutencaoDialog({ equipamentoId, planoId, aoFech
   })
   const agendadasQuery = useQuery({
     queryKey: ['manutencoes', 'agendadas-do-equipamento', form.equipamentoId],
-    queryFn: () => api.get<Pagina<Agendada>>(`/api/v1/manutencoes?status=AGENDADA&equipamentoId=${form.equipamentoId}&size=100`),
+    queryFn: () => api.get<Pagina<Manutencao>>(`/api/v1/manutencoes?status=AGENDADA&equipamentoId=${form.equipamentoId}&size=100`),
     enabled: Boolean(form.equipamentoId),
   })
   const agendamentoExistente = form.tipo === 'PREVENTIVA' && form.planoId

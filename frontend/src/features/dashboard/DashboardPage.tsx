@@ -7,54 +7,13 @@ import ArrowForwardRounded from '@mui/icons-material/ArrowForwardRounded'
 import SpeedRounded from '@mui/icons-material/SpeedRounded'
 import EventRounded from '@mui/icons-material/EventRounded'
 import { api } from '../../api/http'
+import type { Alerta, DashboardResumo, Manutencao, Pagina } from '../../api/tipos'
 import EmptyState from '../../shared/components/EmptyState'
-import StatusBadge, { type NivelAlerta } from '../../shared/components/StatusBadge'
+import StatusBadge from '../../shared/components/StatusBadge'
 import { formatCalendarDate, formatDate, formatHours } from '../../shared/formatters'
 import RegistrarLeituraDialog from '../leituras/RegistrarLeituraDialog'
 import AgendarManutencaoDialog from '../manutencoes/AgendarManutencaoDialog'
 
-interface Alerta {
-  planoId: number
-  nomePlano: string
-  equipamentoId: number
-  codigoEquipamento: string
-  nomeEquipamento: string
-  tipoEquipamento: string
-  horimetroAtual: number
-  proximoVencimento: number
-  horasRestantes: number
-  status: NivelAlerta
-  dataReferencia: string | null
-}
-
-interface ManutencaoAgendada {
-  id: number
-  equipamentoId: number
-  codigoEquipamento: string
-  nomeEquipamento: string
-  planoId: number | null
-  nomePlano: string | null
-  tipo: 'PREVENTIVA' | 'CORRETIVA'
-  status: 'AGENDADA' | 'CONCLUIDA' | 'CANCELADA'
-  dataAgendada: string | null
-  dataExecucao: string | null
-  horimetroExecucao: number | null
-  responsavel: string | null
-  observacoes: string | null
-  criadoEm: string
-  atualizadoEm: string
-}
-
-interface DashboardResumo {
-  planosVencidos: number
-  planosProximos: number
-  planosEmDia: number
-  manutencoesAgendadasProximosSeteDias: number
-  alertasCriticos: Alerta[]
-  proximasManutencoes: ManutencaoAgendada[]
-}
-
-interface Pagina<T> { content: T[]; totalElements: number }
 type FiltroAlerta = 'VENCIDA' | 'PROXIMA' | null
 type DialogoPainel = { tipo: 'leitura' | 'agendar'; alerta: Alerta } | null
 const ALERTAS_NO_PAINEL = 8
@@ -317,6 +276,6 @@ function formatUpdatedAt(timestamp: number) {
   return `às ${new Intl.DateTimeFormat('pt-BR', { hour: '2-digit', minute: '2-digit' }).format(timestamp)}`
 }
 
-function labelTipo(tipo: ManutencaoAgendada['tipo']) {
+function labelTipo(tipo: Manutencao['tipo']) {
   return tipo === 'PREVENTIVA' ? 'Preventiva' : 'Corretiva'
 }

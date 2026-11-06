@@ -1,15 +1,12 @@
 import { useState, type FormEvent } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { api } from '../../api/http'
+import type { Equipamento, Pagina, Plano, StatusPlano } from '../../api/tipos'
+import { calcularMudancas, type MudancaStatus } from './impactoLeitura'
 import './LeiturasPage.css'
 
-type StatusPlano = 'VENCIDA' | 'PROXIMA' | 'EM_DIA'
-interface Equipamento { id: number; codigo: string; nome: string; status: string; horimetroAtual: number; dataUltimaLeitura: string | null }
-interface Plano { id: number; nome: string; status: StatusPlano; horasRestantes: number }
-interface Pagina<T> { content: T[] }
 interface Formulario { equipamentoId: string; valor: string; dataHora: string; responsavel: string; observacao: string }
-interface Mudanca { plano: string; de: StatusPlano; para: StatusPlano; horasRestantes: number }
-interface Resultado { equipamento: string; valor: number; mudancas: Mudanca[] }
+interface Resultado { equipamento: string; valor: number; mudancas: MudancaStatus[] }
 
 interface Props {
   /** Equipamento já escolhido (ex.: ao abrir a partir de um alerta do painel). */
@@ -51,12 +48,7 @@ export default function RegistrarLeituraDialog({ equipamentoId, horimetroAtual, 
         responsavel: form.responsavel, observacao: form.observacao || null,
       })
       const depois = await buscarPlanos(form.equipamentoId)
-      const mudancas = depois.flatMap(plano => {
-        const anterior = antes.find(item => item.id === plano.id)
-        return anterior && anterior.status !== plano.status
-          ? [{ plano: plano.nome, de: anterior.status, para: plano.status, horasRestantes: plano.horasRestantes }]
-          : []
-      })
+      const mudancas = calcularMudancas(antes, depois)
       return { equipamento: equipamento ? `${equipamento.codigo} · ${equipamento.nome}` : '', valor: Number(form.valor), mudancas }
     },
     onSuccess: async (dados) => {
