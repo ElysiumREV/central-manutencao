@@ -13,12 +13,12 @@ interface Pagina<T> { content:T[]; totalElements:number; totalPages:number }
 type Acao = { tipo:'agendar' } | { tipo:'concluir'; manutencao:Manutencao } | { tipo:'cancelar'; manutencao:Manutencao }
 
 export default function ManutencoesPage() {
-  const client=useQueryClient(); const [statusFiltro,setStatusFiltro]=useState('AGENDADA'); const [pagina,setPagina]=useState(0); const [acao,setAcao]=useState<Acao|null>(null)
+  const client=useQueryClient(); const [statusFiltro,setStatusFiltro]=useState('AGENDADA'); const [ordem,setOrdem]=useState<Ordem>('prazo-asc'); const [pagina,setPagina]=useState(0); const [acao,setAcao]=useState<Acao|null>(null)
   const [form,setForm]=useState({ equipamentoId:'', planoId:'', tipo:'PREVENTIVA' as Tipo, dataAgendada:'', dataExecucao:agoraLocal(), horimetroExecucao:'', responsavel:'', observacoes:'' })
   const equipamentosQuery=useQuery({queryKey:['equipamentos-opcoes'],queryFn:()=>api.get<Pagina<Equipamento>>('/api/v1/equipamentos?size=100&sort=nome,asc')})
   const planosQuery=useQuery({queryKey:['planos-opcoes',form.equipamentoId],queryFn:()=>api.get<Pagina<Plano>>(`/api/v1/planos?equipamentoId=${form.equipamentoId}&ativo=true&size=100&sort=nome,asc`),enabled:Boolean(form.equipamentoId)})
-  const params=new URLSearchParams({page:String(pagina),size:'10',sort:'dataAgendada,desc'}); if(statusFiltro)params.set('status',statusFiltro)
-  const manutencoesQuery=useQuery({queryKey:['manutencoes',statusFiltro,pagina],queryFn:()=>api.get<Pagina<Manutencao>>(`/api/v1/manutencoes?${params}`)})
+  const params=new URLSearchParams({page:String(pagina),size:'10',sort:ORDENS[ordem].sort}); params.append('sort','id,asc'); if(statusFiltro)params.set('status',statusFiltro)
+  const manutencoesQuery=useQuery({queryKey:['manutencoes',statusFiltro,ordem,pagina],queryFn:()=>api.get<Pagina<Manutencao>>(`/api/v1/manutencoes?${params}`)})
   const equipment=equipamentosQuery.data?.content.find(item=>item.id===Number(form.equipamentoId))
   const planos=planosQuery.data?.content??[]
   const atualizarDados=async()=>{await Promise.all([client.invalidateQueries({queryKey:['manutencoes']}),client.invalidateQueries({queryKey:['planos']}),client.invalidateQueries({queryKey:['dashboard-resumo']}),client.invalidateQueries({queryKey:['equipamentos-opcoes']})])}
@@ -39,7 +39,7 @@ export default function ManutencoesPage() {
 
   return <section className="maintenance-page">
     <header className="maintenance-heading"><div><p className="maintenance-eyebrow">AGENDA E HISTÓRICO</p><h2>Manutenções</h2><p>Agende intervenções e registre a conclusão dos serviços.</p></div><button className="maintenance-primary" onClick={abrirAgendamento}><AddRounded/> Agendar manutenção</button></header>
-    <section className="maintenance-panel"><div className="maintenance-filters"><label>Status<select value={statusFiltro} onChange={e=>{setStatusFiltro(e.target.value);setPagina(0)}}><option value="AGENDADA">Agendadas</option><option value="CONCLUIDA">Concluídas</option><option value="CANCELADA">Canceladas</option><option value="">Todas</option></select></label><span>{manutencoesQuery.data?.totalElements??0} registros</span></div>
+    <section className="maintenance-panel"><div className="maintenance-filters"><label>Status<select value={statusFiltro} onChange={e=>{const status=e.target.value;setStatusFiltro(status);if(!ordensDisponiveis(status).includes(ordem))setOrdem('prazo-asc');setPagina(0)}}><option value="AGENDADA">Agendadas</option><option value="CONCLUIDA">Concluídas</option><option value="CANCELADA">Canceladas</option><option value="">Todas</option></select></label><label>Ordenar por<select value={ordem} onChange={e=>{setOrdem(e.target.value as Ordem);setPagina(0)}}>{ordensDisponiveis(statusFiltro).map(chave=><option key={chave} value={chave}>{ORDENS[chave].label}</option>)}</select></label><span>{manutencoesQuery.data?.totalElements??0} registros</span></div>
       {erro?<div className="maintenance-state maintenance-error" role="alert"><strong>Não foi possível carregar as manutenções.</strong><button onClick={()=>{void manutencoesQuery.refetch();void equipamentosQuery.refetch()}}>Tentar novamente</button></div>:manutencoesQuery.isPending||equipamentosQuery.isPending?<div className="maintenance-state">Carregando manutenções…</div>:itens.length===0?<div className="maintenance-state"><strong>Nenhuma manutenção encontrada</strong><span>Agende uma manutenção ou selecione outro status.</span><button onClick={abrirAgendamento}>Agendar manutenção</button></div>:<><div className="maintenance-table-wrap"><table className="maintenance-table"><thead><tr><th>Data</th><th>Equipamento</th><th>Serviço</th><th>Responsável</th><th>Status</th><th>Ações</th></tr></thead><tbody>{itens.map(item=><tr key={item.id}><td>{item.status==='AGENDADA'?formatarDia(item.dataAgendada):item.dataExecucao?formatarData(item.dataExecucao):'—'}</td><td><strong>{item.codigoEquipamento}</strong><small>{item.nomeEquipamento}</small></td><td><strong>{item.tipo==='PREVENTIVA'?'Preventiva':'Corretiva'}</strong><small>{item.nomePlano??'Sem plano vinculado'}</small></td><td>{item.responsavel??'—'}</td><td><span className={`maintenance-badge maintenance-badge--${item.status.toLowerCase()}`}>{statusLabel(item.status)}</span></td><td className="maintenance-actions">{item.status==='AGENDADA'&&<><button onClick={()=>abrirConclusao(item)}>Concluir</button><button onClick={()=>abrirCancelamento(item)}>Cancelar</button></>}</td></tr>)}</tbody></table></div><footer className="maintenance-pagination"><span>Página {pagina+1} de {Math.max(manutencoesQuery.data?.totalPages??1,1)}</span><div><button disabled={!pagina} onClick={()=>setPagina(p=>p-1)}>Anterior</button><button disabled={pagina+1>=(manutencoesQuery.data?.totalPages??0)} onClick={()=>setPagina(p=>p+1)}>Próxima</button></div></footer></>}
     </section>
     {acao&&<div className="maintenance-backdrop" onMouseDown={e=>{if(e.target===e.currentTarget)fechar()}}><section className="maintenance-modal" role="dialog" aria-modal="true" aria-labelledby="maintenance-dialog-title"><header><h2 id="maintenance-dialog-title">{acao.tipo==='agendar'?'Agendar manutenção':acao.tipo==='concluir'?'Concluir manutenção':'Cancelar manutenção'}</h2><button aria-label="Fechar" onClick={fechar}>×</button></header><form onSubmit={enviar}>
@@ -50,6 +50,17 @@ export default function ManutencoesPage() {
 }
 
 function agoraLocal(){const agora=new Date();agora.setMinutes(agora.getMinutes()-agora.getTimezoneOffset());return agora.toISOString().slice(0,16)}
+// Ordenações oferecidas na lista. O backend recebe `sort` direto no Pageable; `id` é adicionado como desempate
+// para a paginação ficar estável quando várias manutenções têm a mesma data.
+type Ordem='prazo-asc'|'prazo-desc'|'execucao-desc'|'cadastro-desc'
+const ORDENS:Record<Ordem,{label:string;sort:string}>={
+  'prazo-asc':{label:'Prazo mais próximo',sort:'dataAgendada,asc'},
+  'prazo-desc':{label:'Prazo mais distante',sort:'dataAgendada,desc'},
+  'execucao-desc':{label:'Execução mais recente',sort:'dataExecucao,desc'},
+  'cadastro-desc':{label:'Cadastro mais recente',sort:'criadoEm,desc'},
+}
+// Agendadas e canceladas não têm data de execução; no PostgreSQL os nulos viriam primeiro nessa ordem.
+function ordensDisponiveis(status:string):Ordem[]{return status==='CONCLUIDA'||status===''?['prazo-asc','prazo-desc','execucao-desc','cadastro-desc']:['prazo-asc','prazo-desc','cadastro-desc']}
 function statusLabel(status:Status){return({AGENDADA:'Agendada',CONCLUIDA:'Concluída',CANCELADA:'Cancelada'})[status]}
 function formatarDia(valor:string|null){return valor?new Intl.DateTimeFormat('pt-BR',{dateStyle:'short'}).format(new Date(`${valor}T12:00:00`)):'—'}
 function formatarData(valor:string){return new Intl.DateTimeFormat('pt-BR',{dateStyle:'short',timeStyle:'short'}).format(new Date(valor))}
