@@ -1,5 +1,6 @@
 package com.elysium.central.manutencao.manutencao;
 
+import io.swagger.v3.oas.annotations.media.Schema;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
@@ -9,15 +10,15 @@ public record ManutencaoResponse(
         Long equipamentoId,
         String codigoEquipamento,
         String nomeEquipamento,
-        Long planoId,
-        String nomePlano,
+        @Schema(nullable = true) Long planoId,
+        @Schema(nullable = true) String nomePlano,
         TipoManutencao tipo,
         StatusManutencao status,
-        LocalDate dataAgendada,
-        Instant dataExecucao,
-        BigDecimal horimetroExecucao,
-        String responsavel,
-        String observacoes,
+        @Schema(nullable = true) LocalDate dataAgendada,
+        @Schema(nullable = true) Instant dataExecucao,
+        @Schema(nullable = true) BigDecimal horimetroExecucao,
+        @Schema(nullable = true) String responsavel,
+        @Schema(nullable = true) String observacoes,
         Instant criadoEm,
         Instant atualizadoEm
 ) {

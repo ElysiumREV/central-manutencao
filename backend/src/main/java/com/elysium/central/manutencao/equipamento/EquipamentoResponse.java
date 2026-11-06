@@ -1,5 +1,6 @@
 package com.elysium.central.manutencao.equipamento;
 
+import io.swagger.v3.oas.annotations.media.Schema;
 import java.math.BigDecimal;
 import java.time.Instant;
 
@@ -8,13 +9,13 @@ public record EquipamentoResponse(
         String codigo,
         String nome,
         String tipo,
-        String fabricante,
-        String modelo,
-        String numeroSerie,
-        String localizacao,
+        @Schema(nullable = true) String fabricante,
+        @Schema(nullable = true) String modelo,
+        @Schema(nullable = true) String numeroSerie,
+        @Schema(nullable = true) String localizacao,
         StatusEquipamento status,
         BigDecimal horimetroAtual,
-        Instant dataUltimaLeitura,
+        @Schema(nullable = true) Instant dataUltimaLeitura,
         Long version,
         Instant criadoEm,
         Instant atualizadoEm

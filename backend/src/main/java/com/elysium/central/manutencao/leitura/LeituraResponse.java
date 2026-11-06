@@ -1,5 +1,6 @@
 package com.elysium.central.manutencao.leitura;
 
+import io.swagger.v3.oas.annotations.media.Schema;
 import java.math.BigDecimal;
 import java.time.Instant;
 
@@ -11,7 +12,7 @@ public record LeituraResponse(
         BigDecimal valor,
         Instant dataHora,
         String responsavel,
-        String observacao,
+        @Schema(nullable = true) String observacao,
         Instant criadoEm
 ) {
     static LeituraResponse de(LeituraHorimetro leitura) {
