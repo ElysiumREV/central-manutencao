@@ -1,6 +1,7 @@
 import { useState, type FormEvent } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import AddRounded from '@mui/icons-material/AddRounded'
+import TaskAltRounded from '@mui/icons-material/TaskAltRounded'
 import { api } from '../../api/http'
 import type {
   Equipamento,
@@ -11,6 +12,7 @@ import type {
 } from '../../api/tipos'
 import { formatDate, formatDateTime as formatarData } from '../../shared/formatters'
 import AgendarManutencaoDialog from './AgendarManutencaoDialog'
+import RegistrarManutencaoDialog from './RegistrarManutencaoDialog'
 import './ManutencoesPage.css'
 
 type Acao =
@@ -24,6 +26,7 @@ export default function ManutencoesPage() {
   const [ordem, setOrdem] = useState<Ordem>('prazo-asc')
   const [pagina, setPagina] = useState(0)
   const [acao, setAcao] = useState<Acao | null>(null)
+  const [registrandoRealizada, setRegistrandoRealizada] = useState(false)
   const [form, setForm] = useState({
     equipamentoId: '',
     planoId: '',
@@ -132,9 +135,18 @@ export default function ManutencoesPage() {
           <h2>Manutenções</h2>
           <p>Agende intervenções e registre a conclusão dos serviços.</p>
         </div>
-        <button className="maintenance-primary" onClick={abrirAgendamento}>
-          <AddRounded /> Agendar manutenção
-        </button>
+        <div className="maintenance-heading-actions">
+          <button
+            className="maintenance-secondary"
+            onClick={() => setRegistrandoRealizada(true)}
+            aria-label="Registrar manutenção realizada"
+          >
+            <TaskAltRounded /> <span>Registrar realizada</span>
+          </button>
+          <button className="maintenance-primary" onClick={abrirAgendamento} aria-label="Agendar manutenção">
+            <AddRounded /> <span>Agendar manutenção</span>
+          </button>
+        </div>
       </header>
       <section className="maintenance-panel">
         <div className="maintenance-filters">
@@ -264,6 +276,7 @@ export default function ManutencoesPage() {
         )}
       </section>
       {acao?.tipo === 'agendar' && <AgendarManutencaoDialog aoFechar={fechar} />}
+      {registrandoRealizada && <RegistrarManutencaoDialog aoFechar={() => setRegistrandoRealizada(false)} />}
       {acao && acao.tipo !== 'agendar' && (
         <div
           className="maintenance-backdrop"
