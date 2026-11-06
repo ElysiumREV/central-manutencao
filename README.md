@@ -86,15 +86,16 @@ Acesse <http://localhost:5173>. O Vite já repassa `/api` para `http://localhost
 - **Próxima:** ainda não venceu e faltam horas menores ou iguais à antecedência configurada.
 - Uma leitura não pode ter valor menor que o horímetro atual nem data anterior à leitura mais recente.
 - A edição da configuração de um plano não altera seu horímetro de última execução. Esse valor é atualizado ao concluir uma manutenção preventiva.
+- Não é possível agendar para uma data passada. O "hoje" segue o fuso `APP_TIMEZONE` (padrão `America/Sao_Paulo`), porque o servidor roda em UTC.
 - Uma preventiva exige plano ativo; o banco também impede agendamentos duplicados para o mesmo plano.
 - Inativar equipamento preserva o histórico.
 
 ## Testes
 
-O backend possui 22 testes. Os unitários cobrem o cálculo de status nos limites (em dia, próxima, vencida) e o ciclo do plano. Os de integração, com PostgreSQL 16 via Testcontainers, cobrem:
+O backend possui 24 testes. Os unitários cobrem o cálculo de status nos limites (em dia, próxima, vencida) e o ciclo do plano. Os de integração, com PostgreSQL 16 via Testcontainers, cobrem:
 - leituras regressivas, retroativas, futuras ou em equipamento inativo;
 - conclusão preventiva recalculando o vencimento;
-- agendamento duplicado e agendamento para plano inativo;
+- agendamento duplicado, para plano inativo ou com data no passado;
 - o contrato HTTP de erros (400 com campos inválidos ou ordenação inválida, 409 e 401) e a ordenação da lista de manutenções.
 
 Docker precisa estar disponível para a suíte de integração.
@@ -118,7 +119,7 @@ O backend é organizado por funcionalidade (`equipamento`, `plano`, `leitura`, `
 
 Erros seguem o padrão `ProblemDetail` (RFC 7807), centralizado em `shared/GlobalExceptionHandler`: 400 para validação (com o campo `errors` indicando cada campo inválido), 404 para recurso inexistente, 409 para conflitos (código duplicado, agendamento duplicado, edição concorrente) e 422 para regra de negócio violada. Detalhes internos, como o SQL de uma constraint, ficam só no log.
 
-O frontend separa as páginas por funcionalidade em `frontend/src/features`; `frontend/src/api/http.ts` centraliza chamadas REST e autenticação.
+O frontend separa as páginas por funcionalidade em `frontend/src/features` (o painel fica em `features/dashboard`) e os componentes e formatadores reutilizados em `frontend/src/shared`; `frontend/src/api/http.ts` centraliza chamadas REST e autenticação.
 
 Mais contexto e decisões estão em [`docs/contexto-para-llm.md`](docs/contexto-para-llm.md), no [modelo de dados](docs/modelo-de-dados.md) e nas [telas](docs/telas.md).
 

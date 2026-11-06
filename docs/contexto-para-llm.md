@@ -603,4 +603,20 @@ A suíte tem agora 22 testes, todos passando. `tsc -b` e ESLint da página passa
 
 **Verificação feita:** `tsc -b`, `eslint src` e `npm run build` passaram. Pelo nginx, com o seed: `/alertas?size=8` devolve 10 no total (8 exibidos), `nivel=VENCIDA` devolve 6 e `nivel=PROXIMA` devolve 4. O plano da EMP-003 tem agendamento aberto, então o aviso aparece. Container `web` reconstruído. **A conferência visual ainda é do usuário.**
 
-**Lacuna conhecida:** o backend aceita `dataAgendada` no passado; apenas o diálogo impede isso. Se for corrigir, a regra vai no `ManutencaoService.agendar` (422), com teste.
+~~**Lacuna conhecida:** o backend aceita `dataAgendada` no passado.~~ Corrigido em 06/11 (ver abaixo).
+
+## Data passada no agendamento e organização do frontend (06/11/2026)
+
+**Regra:** `ManutencaoService.agendar` agora recusa `dataAgendada` anterior a hoje, com 422 e a mensagem "A data agendada não pode estar no passado." Agendar para hoje continua permitido.
+
+**Fuso:** o "hoje" vem de `app.zona-horaria`, configurada pela variável `APP_TIMEZONE`, com padrão `America/Sao_Paulo`. O container roda em UTC; sem isso, entre 21h e meia-noite no Brasil o servidor recusaria um agendamento feito para o dia corrente. O `DashboardService`, que antes tinha o fuso fixo no código, passou a ler a mesma propriedade.
+
+**Testes:** `rejeitaAgendamentoComDataNoPassado` e `aceitaAgendamentoParaHoje`. A suíte tem 24 testes, todos passando.
+
+**Frontend:** o `App.tsx`, que tinha cerca de 490 linhas, foi dividido:
+- `App.tsx` (cerca de 145 linhas) ficou com autenticação, shell e rotas;
+- `features/dashboard/DashboardPage.tsx` ficou com o painel: KPIs, tabela de alertas, agenda e skeleton;
+- `shared/components/StatusBadge.tsx` e `shared/components/EmptyState.tsx`;
+- `shared/formatters.ts` (`formatHours`, `formatDate`, `formatCalendarDate`).
+
+O CSS continua todo em `App.css`. As regras do shell e do painel estão misturadas, inclusive nos media queries, e separá-las exigiria conferência visual; ficou para depois. As outras páginas ainda têm seus próprios formatadores locais, que podem ser unificados com `shared/formatters.ts` mais tarde.
