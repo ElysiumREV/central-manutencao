@@ -290,7 +290,7 @@ SELECT e.id, NULL, 'CORRETIVA', 'CONCLUIDA',
 
 INSERT INTO manutencao (equipamento_id, plano_id, tipo, status, data_agendada, responsavel, observacoes)
 SELECT e.id, NULL, 'CORRETIVA', 'CANCELADA',
-       '2026-10-28', 'Coordenação de Manutenção',
+       CURRENT_DATE - 9, 'Coordenação de Manutenção',
        'Manutenção corretiva cancelada – ruído identificado como normal de operação após inspeção.'
   FROM equipamento e
  WHERE e.codigo = 'GNC-009';
@@ -299,12 +299,13 @@ SELECT e.id, NULL, 'CORRETIVA', 'CANCELADA',
 -- ---------------------------------------------------------------------
 -- 4c. AGENDADAS — aparecem no painel "Próximas manutenções" (7 dias)
 -- ---------------------------------------------------------------------
--- Datas entre 2026-11-05 e 2026-11-12; índice único garante um
+-- Datas relativas a CURRENT_DATE (+1 a +6 dias), para o painel nunca
+-- ficar vazio, seja qual for o dia em que o seed rodar. Índice único garante um
 -- agendamento aberto por plano (ux_manutencao_plano_agendada).
 
 INSERT INTO manutencao (equipamento_id, plano_id, tipo, status, data_agendada, responsavel, observacoes)
 SELECT e.id, p.id, 'PREVENTIVA', 'AGENDADA',
-       '2026-11-06', 'Gustavo Lima',
+       CURRENT_DATE + 1, 'Gustavo Lima',
        'Revisão do motor e tambor. Equipamento parado para manutenção.'
   FROM equipamento e
   JOIN plano_manutencao p ON p.equipamento_id = e.id
@@ -312,7 +313,7 @@ SELECT e.id, p.id, 'PREVENTIVA', 'AGENDADA',
 
 INSERT INTO manutencao (equipamento_id, plano_id, tipo, status, data_agendada, responsavel, observacoes)
 SELECT e.id, p.id, 'PREVENTIVA', 'AGENDADA',
-       '2026-11-07', 'Roberto Maia',
+       CURRENT_DATE + 2, 'Roberto Maia',
        'Revisão preventiva geral. Plano vencido – prioridade alta.'
   FROM equipamento e
   JOIN plano_manutencao p ON p.equipamento_id = e.id
@@ -320,7 +321,7 @@ SELECT e.id, p.id, 'PREVENTIVA', 'AGENDADA',
 
 INSERT INTO manutencao (equipamento_id, plano_id, tipo, status, data_agendada, responsavel, observacoes)
 SELECT e.id, p.id, 'PREVENTIVA', 'AGENDADA',
-       '2026-11-08', 'Beatriz Nunes',
+       CURRENT_DATE + 3, 'Beatriz Nunes',
        'Verificação do sistema hidráulico. Equipamento em parada programada.'
   FROM equipamento e
   JOIN plano_manutencao p ON p.equipamento_id = e.id
@@ -328,7 +329,7 @@ SELECT e.id, p.id, 'PREVENTIVA', 'AGENDADA',
 
 INSERT INTO manutencao (equipamento_id, plano_id, tipo, status, data_agendada, responsavel, observacoes)
 SELECT e.id, p.id, 'PREVENTIVA', 'AGENDADA',
-       '2026-11-09', 'Fernanda Costa',
+       CURRENT_DATE + 4, 'Fernanda Costa',
        'Manutenção preventiva agendada antes do vencimento. Faltam 50 h.'
   FROM equipamento e
   JOIN plano_manutencao p ON p.equipamento_id = e.id
@@ -336,7 +337,7 @@ SELECT e.id, p.id, 'PREVENTIVA', 'AGENDADA',
 
 INSERT INTO manutencao (equipamento_id, plano_id, tipo, status, data_agendada, responsavel, observacoes)
 SELECT e.id, p.id, 'PREVENTIVA', 'AGENDADA',
-       '2026-11-11', 'Marcos Alves',
+       CURRENT_DATE + 6, 'Marcos Alves',
        'Manutenção completa do trator. Reserva de técnico e peças confirmada.'
   FROM equipamento e
   JOIN plano_manutencao p ON p.equipamento_id = e.id
