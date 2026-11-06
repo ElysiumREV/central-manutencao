@@ -13,12 +13,17 @@ import CalendarTodayOutlined from '@mui/icons-material/CalendarTodayOutlined'
 import ArrowForwardRounded from '@mui/icons-material/ArrowForwardRounded'
 import AccessTimeRounded from '@mui/icons-material/AccessTimeRounded'
 import LogoutOutlined from '@mui/icons-material/LogoutOutlined'
+import AddRounded from '@mui/icons-material/AddRounded'
+import SpeedRounded from '@mui/icons-material/SpeedRounded'
+import EventRounded from '@mui/icons-material/EventRounded'
 import { api, limparCredenciais, possuiCredenciais } from './api/http'
 import LoginPage from './features/auth/LoginPage'
 import EquipamentosPage from './features/equipamentos/EquipamentosPage'
 import PlanosPage from './features/planos/PlanosPage'
 import LeiturasPage from './features/leituras/LeiturasPage'
 import ManutencoesPage from './features/manutencoes/ManutencoesPage'
+import RegistrarLeituraDialog from './features/leituras/RegistrarLeituraDialog'
+import AgendarManutencaoDialog from './features/manutencoes/AgendarManutencaoDialog'
 import './App.css'
 
 type NivelAlerta = 'VENCIDA' | 'PROXIMA' | 'EM_DIA'
@@ -63,6 +68,11 @@ interface DashboardResumo {
   alertasCriticos: Alerta[]
   proximasManutencoes: ManutencaoAgendada[]
 }
+
+interface Pagina<T> { content: T[]; totalElements: number }
+type FiltroAlerta = 'VENCIDA' | 'PROXIMA' | null
+type DialogoPainel = { tipo: 'leitura' | 'agendar'; alerta: Alerta } | null
+const ALERTAS_NO_PAINEL = 8
 
 async function buscarResumo(): Promise<DashboardResumo> {
   return api.get<DashboardResumo>('/api/v1/dashboard/resumo')
@@ -115,6 +125,7 @@ function App() {
 
 function AppShell({ aoSair }: { aoSair: () => void }) {
   const [menuAberto, setMenuAberto] = useState(false)
+  const [leituraRapida, setLeituraRapida] = useState(false)
   const location = useLocation()
   const titulo = titulos[location.pathname] ?? 'Central de manutenção'
 
@@ -164,6 +175,7 @@ function AppShell({ aoSair }: { aoSair: () => void }) {
             <span>Central de manutenção</span>
             <h1>{titulo}</h1>
           </div>
+          <button className="quick-reading-button" onClick={() => setLeituraRapida(true)} aria-label="Registrar leitura"><AddRounded /> <span>Leitura</span></button>
           <a className="api-link" href="http://localhost:8080/swagger-ui.html" target="_blank" rel="noreferrer">
             API <ArrowForwardRounded />
           </a>
@@ -181,15 +193,24 @@ function AppShell({ aoSair }: { aoSair: () => void }) {
           </Routes>
         </div>
       </main>
+      {leituraRapida && <RegistrarLeituraDialog aoFechar={() => setLeituraRapida(false)} />}
     </div>
   )
 }
 
 function DashboardPage() {
+  const [filtro, setFiltro] = useState<FiltroAlerta>(null)
+  const [dialogo, setDialogo] = useState<DialogoPainel>(null)
   const { data, error, isPending, isError, dataUpdatedAt, refetch, isFetching } = useQuery({
     queryKey: ['dashboard-resumo'],
     queryFn: buscarResumo,
   })
+  // Vencidas e próximas juntas, já ordenadas pelo backend do menor restante (mais atrasado) para o maior.
+  const alertasQuery = useQuery({
+    queryKey: ['alertas', 'painel', filtro],
+    queryFn: () => api.get<Pagina<Alerta>>(`/api/v1/alertas?size=${ALERTAS_NO_PAINEL}${filtro ? `&nivel=${filtro}` : ''}`),
+  })
+  const alternarFiltro = (nivel: Exclude<FiltroAlerta, null>) => setFiltro(atual => atual === nivel ? null : nivel)
 
   if (isPending) return <LoadingDashboard />
   if (isError) {
@@ -205,12 +226,17 @@ function DashboardPage() {
     )
   }
 
-  const cards = [
-    { label: 'Vencidas', value: data.planosVencidos, tone: 'red', hint: 'Precisam de atenção' },
-    { label: 'Próximas', value: data.planosProximos, tone: 'amber', hint: 'Dentro da antecedência' },
-    { label: 'Em dia', value: data.planosEmDia, tone: 'green', hint: 'Dentro do intervalo' },
-    { label: 'Agendadas', value: data.manutencoesAgendadasProximosSeteDias, tone: 'blue', hint: 'Próximos 7 dias' },
+  // Vencidas e Próximas filtram a tabela abaixo; Em dia e Agendadas levam às telas correspondentes.
+  const cards: KpiCardProps[] = [
+    { label: 'Vencidas', value: data.planosVencidos, tone: 'red', hint: filtro === 'VENCIDA' ? 'Filtrando a tabela' : 'Precisam de atenção', ativo: filtro === 'VENCIDA', aoClicar: () => alternarFiltro('VENCIDA') },
+    { label: 'Próximas', value: data.planosProximos, tone: 'amber', hint: filtro === 'PROXIMA' ? 'Filtrando a tabela' : 'Dentro da antecedência', ativo: filtro === 'PROXIMA', aoClicar: () => alternarFiltro('PROXIMA') },
+    { label: 'Em dia', value: data.planosEmDia, tone: 'green', hint: 'Dentro do intervalo', rota: '/planos' },
+    { label: 'Agendadas', value: data.manutencoesAgendadasProximosSeteDias, tone: 'blue', hint: 'Próximos 7 dias', rota: '/manutencoes' },
   ]
+  const alertas = alertasQuery.data
+  const descricaoTabela = filtro === 'VENCIDA' ? 'Somente planos vencidos, do maior atraso para o menor.'
+    : filtro === 'PROXIMA' ? 'Somente planos dentro da antecedência de alerta.'
+      : 'Vencidos e próximos do vencimento, do maior atraso para o menor.'
 
   return (
     <div className="dashboard-page">
@@ -235,11 +261,31 @@ function DashboardPage() {
           <div className="panel-heading">
             <div>
               <h2>Planos que precisam de atenção</h2>
-              <p>Vencimentos ordenados pelo maior atraso.</p>
+              <p>{descricaoTabela}</p>
             </div>
-            <span className="panel-count">{data.alertasCriticos.length}</span>
+            <span className="panel-count">{alertas?.totalElements ?? '–'}</span>
           </div>
-          <AlertsTable alerts={data.alertasCriticos} />
+          {alertasQuery.isError ? (
+            <div className="panel-inline-state" role="alert">
+              <span>Não foi possível carregar os alertas.</span>
+              <button className="button button--secondary" onClick={() => void alertasQuery.refetch()}>Tentar novamente</button>
+            </div>
+          ) : !alertas ? (
+            <div className="panel-inline-state" aria-busy="true">Carregando alertas…</div>
+          ) : (
+            <>
+              <AlertsTable
+                alerts={alertas.content}
+                aoRegistrarLeitura={alerta => setDialogo({ tipo: 'leitura', alerta })}
+                aoAgendar={alerta => setDialogo({ tipo: 'agendar', alerta })}
+              />
+              {alertas.totalElements > alertas.content.length && (
+                <Link className="panel-footer-link" to="/planos">
+                  Ver todos os {alertas.totalElements} planos em alerta <ArrowForwardRounded />
+                </Link>
+              )}
+            </>
+          )}
         </section>
 
         <section className="panel schedule-panel">
@@ -271,25 +317,69 @@ function DashboardPage() {
       </div>
 
       <p className="updated-at">Dados atualizados {formatUpdatedAt(dataUpdatedAt)}</p>
+
+      {dialogo?.tipo === 'leitura' && (
+        <RegistrarLeituraDialog
+          equipamentoId={dialogo.alerta.equipamentoId}
+          horimetroAtual={dialogo.alerta.horimetroAtual}
+          aoFechar={() => setDialogo(null)}
+        />
+      )}
+      {dialogo?.tipo === 'agendar' && (
+        <AgendarManutencaoDialog
+          equipamentoId={dialogo.alerta.equipamentoId}
+          planoId={dialogo.alerta.planoId}
+          aoFechar={() => setDialogo(null)}
+        />
+      )}
     </div>
   )
 }
 
-function KpiCard({ label, value, tone, hint }: { label: string; value: number; tone: string; hint: string }) {
-  const rota = label === 'Agendadas' ? '/manutencoes' : '/planos'
-  return (
-    <NavLink to={rota} className={`kpi-card kpi-card--${tone}`} aria-label={`${label}: ${value}. Abrir ${rota === '/planos' ? 'planos de manutenção' : 'manutenções'}`}>
+interface KpiCardProps {
+  label: string
+  value: number
+  tone: string
+  hint: string
+  /** Card que abre outra tela. */
+  rota?: string
+  /** Card que filtra a tabela de alertas (botão de alternância). */
+  aoClicar?: () => void
+  ativo?: boolean
+}
+
+function KpiCard({ label, value, tone, hint, rota, aoClicar, ativo }: KpiCardProps) {
+  const conteudo = (
+    <>
       <div className="kpi-topline">
         <span className="kpi-label">{label}</span>
         <span className="kpi-indicator" aria-hidden="true" />
       </div>
       <strong className="kpi-value">{value}</strong>
       <span className="kpi-hint">{hint}</span>
+    </>
+  )
+  if (aoClicar) {
+    return (
+      <button type="button" onClick={aoClicar} aria-pressed={ativo}
+        className={`kpi-card kpi-card--${tone} ${ativo ? 'kpi-card--active' : ''}`}
+        aria-label={`${label}: ${value}. ${ativo ? 'Remover filtro' : 'Filtrar alertas'}`}>
+        {conteudo}
+      </button>
+    )
+  }
+  return (
+    <NavLink to={rota ?? '/'} className={`kpi-card kpi-card--${tone}`} aria-label={`${label}: ${value}. Abrir ${rota === '/planos' ? 'planos de manutenção' : 'manutenções'}`}>
+      {conteudo}
     </NavLink>
   )
 }
 
-function AlertsTable({ alerts }: { alerts: Alerta[] }) {
+function AlertsTable({ alerts, aoRegistrarLeitura, aoAgendar }: {
+  alerts: Alerta[]
+  aoRegistrarLeitura: (alerta: Alerta) => void
+  aoAgendar: (alerta: Alerta) => void
+}) {
   if (alerts.length === 0) {
     return <EmptyState title="Tudo em dia" text="Nenhum plano ativo está vencido ou dentro da faixa de alerta." />
   }
@@ -304,6 +394,7 @@ function AlertsTable({ alerts }: { alerts: Alerta[] }) {
             <th>Horímetro</th>
             <th>Restante</th>
             <th>Status</th>
+            <th><span className="visually-hidden">Ações</span></th>
           </tr>
         </thead>
         <tbody>
@@ -325,6 +416,16 @@ function AlertsTable({ alerts }: { alerts: Alerta[] }) {
                 {formatHours(alert.horasRestantes)}
               </td>
               <td><StatusBadge status={alert.status} /></td>
+              <td>
+                <div className="row-actions">
+                  <button type="button" className="row-action" onClick={() => aoRegistrarLeitura(alert)} aria-label={`Registrar leitura de ${alert.codigoEquipamento}`}>
+                    <SpeedRounded /> Leitura
+                  </button>
+                  <button type="button" className="row-action" onClick={() => aoAgendar(alert)} aria-label={`Agendar ${alert.nomePlano} de ${alert.codigoEquipamento}`}>
+                    <EventRounded /> Agendar
+                  </button>
+                </div>
+              </td>
             </tr>
           ))}
         </tbody>

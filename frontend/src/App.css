@@ -931,3 +931,106 @@
     padding: 25px;
   }
 }
+
+/* ---- Ações do painel ---- */
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+/* KPIs que filtram a tabela são <button>: herdam o visual do card. */
+button.kpi-card {
+  width: 100%;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.kpi-card--active {
+  border-color: var(--tone);
+  background: var(--tone-soft);
+}
+
+.quick-reading-button {
+  margin-left: auto;
+  min-height: 34px;
+  padding: 0 12px;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  border: 0;
+  border-radius: 7px;
+  color: #fff;
+  background: #287b6b;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 650;
+  cursor: pointer;
+}
+
+.quick-reading-button:hover { background: #216b5d; }
+.quick-reading-button svg { width: 17px; height: 17px; }
+
+.row-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 6px;
+}
+
+.row-action {
+  min-height: 30px;
+  padding: 0 9px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  border: 1px solid #dce3e9;
+  border-radius: 6px;
+  color: #42566a;
+  background: #fff;
+  font: inherit;
+  font-size: 10px;
+  font-weight: 650;
+  cursor: pointer;
+}
+
+.row-action:hover { color: #287b6b; border-color: #b6c4cd; background: #f6faf9; }
+.row-action:focus-visible { outline: 2px solid #5c9b8c; outline-offset: 1px; }
+.row-action svg { width: 15px; height: 15px; }
+
+.panel-inline-state {
+  min-height: 160px;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  color: #8793a1;
+  font-size: 12px;
+}
+
+.panel-footer-link {
+  padding: 12px 15px;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 4px;
+  border-top: 1px solid #f0f2f4;
+  color: #287b6b;
+  font-size: 11px;
+  font-weight: 650;
+  text-decoration: none;
+}
+
+.panel-footer-link svg { width: 15px; height: 15px; }
+
+@media (max-width: 620px) {
+  /* No celular o botão vira só o ícone "+" para caber na topbar. */
+  .quick-reading-button { width: 36px; padding: 0; justify-content: center; }
+  .quick-reading-button span { display: none; }
+}
