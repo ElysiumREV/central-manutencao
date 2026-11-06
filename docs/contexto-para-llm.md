@@ -1,7 +1,7 @@
 # Contexto do projeto: Central de Monitoramento de Manutenção Preventiva por Horímetro
 
 > Documento de passagem de contexto. Se você é um LLM assumindo a conversa, leia tudo antes de responder.
-> Última atualização: 04/11/2026. Estado atual: backend e telas operacionais implementados; edição do plano preserva a última execução; autenticação HTTP Basic implementada; 12 testes de regra e integração passam. Próximos focos: README, seed demonstrativo, validação do fluxo completo e vídeo.
+> Última atualização: 06/11/2026. Estado atual: backend, telas operacionais, autenticação, seed e handler global de erros implementados; 22 testes passam. Próximos focos: ações do Painel, tipos OpenAPI no frontend, teste em clone limpo, screenshots e vídeo.
 
 ---
 
@@ -356,8 +356,8 @@ Rotas planejadas: `/` (Painel), `/equipamentos`, `/equipamentos/:id` (detalhe co
 |---|---|---|
 | 0. Setup | Repo, Docker, esqueletos, Flyway V1 | **Concluída** segundo confirmação do usuário; conferir pendências históricas antes de retomá-las |
 | Planejamento restante | Tabela de casos de teste, Figma, cenários do seed | A fazer |
-| 1. Backend base | CRUD de equipamentos e planos, `ProblemDetail`, Swagger e autenticação | Equipamentos, planos, leituras e manutenção compilam; autenticação HTTP Basic implementada; tratamento global pendente |
-| 2. Regras | Leituras, alertas, dashboard, testes unitários e de integração (Testcontainers), seed `V2__seed_demo.sql` | Regras implementadas; 12 testes unitários/de integração passam com PostgreSQL 16 no Testcontainers; seed pendente |
+| 1. Backend base | CRUD de equipamentos e planos, `ProblemDetail`, Swagger e autenticação | Equipamentos, planos, leituras e manutenção compilam; autenticação HTTP Basic e handler global `ProblemDetail` implementados |
+| 2. Regras | Leituras, alertas, dashboard, testes unitários e de integração (Testcontainers), seed `V2__seed_demo.sql` | Regras implementadas; 20 testes unitários/de integração passam com PostgreSQL 16 no Testcontainers; seed `V2` implementado |
 | 3. Frontend | Layout, telas operacionais, integração e estados de interface | Painel, equipamentos, planos, leituras e manutenções implementados; ainda falta detalhe do equipamento, ações integradas do Painel e validação visual/integrada |
 | 4. Acabamento | Responsividade, acessibilidade, revisão de código, teste do compose do zero (`down -v`) | A fazer |
 | 5. Entregáveis | README completo, vídeo, revisão do histórico Git, clonar em pasta limpa e seguir o README | A fazer |
@@ -366,7 +366,7 @@ Rotas planejadas: `/` (Painel), `/equipamentos`, `/equipamentos/:id` (detalhe co
 
 **Fase 1 (backend base)**
 - [x] Estrutura de pacotes por feature (iniciada com `equipamento`)
-- [ ] `shared`: handler global de erros (`ProblemDetail`) e exceções de domínio
+- [x] `shared`: handler global de erros (`ProblemDetail`) — exceções de domínio próprias não foram criadas; os services usam `ResponseStatusException`
 - [x] Equipamento: entidade (com `@Version`), enums, repository, DTOs `record`, service, controller — escrito, ainda não validado
 - [x] Equipamento: filtros + paginação, inativação, TAG duplicada → 409 — escrito, ainda não validado
 - [x] Plano: CRUD, cálculo de `proximo_vencimento`, ativar/desativar — escrito e compilado; validar com banco/Swagger
@@ -538,3 +538,49 @@ Com `exec`, o `sh` é **substituído** pela JVM (`execve` sobrescreve o processo
 **Por que usar `["sh", "-c", "exec ..."]` em vez de `["java", ...]` direto:** a forma exec-array `ENTRYPOINT ["java", ...]` não expande variáveis de shell como `$JAVA_OPTS`. Manter o `sh -c` com `exec` preserva a expansão de variáveis e garante o repasse correto do sinal.
 
 **Verificação:** `docker compose stop` deve encerrar o container `manutencao-api` em menos de 2 s com log `Stopped` (shutdown graceful do Spring Boot) em vez de aguardar os 10 s de timeout.
+
+---
+
+### Atualização de 2026-11-06 — seed com datas relativas, handler global e testes
+
+**Seed (`V2__seed_demo.sql`):** as manutenções agendadas usavam datas fixas (06/11 a 11/11/2026), e a cancelada usava 28/10/2026. Se o avaliador rodasse o projeto depois dessas datas, o card "Próximas manutenções" e o KPI "Agendadas" apareceriam vazios. Agora as agendadas usam `CURRENT_DATE + 1` a `+ 6` (dentro da janela de 7 dias do dashboard) e a cancelada usa `CURRENT_DATE - 9`. As leituras já eram relativas (`now() - interval`).
+- **Por que editar a V2 em vez de criar uma V3:** a V2 ainda não foi entregue, e o avaliador sempre começa com o banco vazio. Uma V3 de `UPDATE` deixaria o seed mais difícil de explicar. Como consequência, quem já tinha aplicado a V2 antiga precisa rodar `docker compose down -v`; senão o Flyway acusa divergência de checksum.
+
+**Handler global (`shared/GlobalExceptionHandler`):** um `@RestControllerAdvice` que estende `ResponseEntityExceptionHandler`. Ao existir esse bean, o `ProblemDetailsExceptionHandler` automático do Boot deixa de ser registrado.
+- **Validação (400):** o `detail` lista os campos inválidos, e a propriedade `errors` traz um mapa `{campo: mensagem}`. O padrão do Spring dizia apenas "Invalid request content". As mensagens seguem o `Accept-Language` do navegador (o Hibernate Validator tem tradução pt-BR).
+- **`OptimisticLockingFailureException` → 409:** antes, só a leitura tratava esse caso; edições concorrentes de equipamento ou plano davam 500.
+- **`DataIntegrityViolationException` → 409:** mensagem genérica para o cliente; a causa vai só para o log, sem expor SQL.
+- **O que continua igual:** os `ResponseStatusException` dos services continuam funcionando, já que a classe base os converte em `ProblemDetail`. O frontend lê `detail` e não precisou mudar.
+
+**Testes:** 12 → 20, todos passando com `./mvnw test` em 06/11.
+- **Novos em `RegrasManutencaoIntegrationTest`:** leitura futura → 422; leitura igual ao horímetro atual → aceita; leitura em equipamento inativo → 422; agendar para plano inativo → 422; novo agendamento permitido após cancelar o anterior (índice parcial).
+- **Novo `ErrosApiIntegrationTest` (MockMvc):** 400 com `errors.codigo` e `errors.horimetroInicial`, código duplicado → 409 com `detail`, e sem credenciais → 401.
+- **Nota Boot 4:** `@AutoConfigureMockMvc` fica em `org.springframework.boot.webmvc.test.autoconfigure`.
+- **Validação extra:** o contexto de teste aplica V1 e V2 num PostgreSQL limpo, o que confirma que o novo SQL do seed é válido.
+
+**README:** login de demonstração indicado, seção sobre o seed e o `down -v`, instruções sem Docker corrigidas (o proxy do Vite já existia), testes e contrato de erros descritos.
+
+**Ainda não validado:** `docker compose down -v && docker compose up --build` com a imagem nova e conferência visual do painel.
+
+### Atualização de 2026-11-06 — ordenação da lista de manutenções
+
+**Pedido do usuário:** escolher a ordem da lista. O padrão deve ser "prazo mais próximo"; antes a ordem era fixa em `dataAgendada,desc`, mostrando primeiro as datas mais distantes.
+
+**Frontend (`ManutencoesPage.tsx`):** novo seletor "Ordenar por" ao lado do filtro de status, com 4 opções:
+- **Prazo mais próximo** (`dataAgendada,asc`), o padrão. As agendadas em atraso aparecem primeiro, por serem as mais urgentes.
+- **Prazo mais distante** (`dataAgendada,desc`).
+- **Execução mais recente** (`dataExecucao,desc`).
+- **Cadastro mais recente** (`criadoEm,desc`).
+
+Detalhes da implementação:
+- **Execução mais recente** só aparece em "Concluídas" e "Todas". Agendadas e canceladas não têm data de execução, e em ordem decrescente o PostgreSQL coloca os nulos primeiro. Se o status mudar e a ordem atual deixar de ser oferecida, a tela volta para o padrão.
+- **Desempate:** toda requisição envia também `sort=id,asc`. Assim a paginação fica estável quando várias manutenções têm a mesma data (mesmo motivo da correção feita nos alertas).
+- **Cache:** a ordem faz parte da `queryKey` do TanStack Query, então cada combinação de filtro e ordem tem seu próprio cache.
+
+**Backend:** nenhuma mudança no endpoint, que já recebia `Pageable`. Foi adicionado `PropertyReferenceException` → 400 ("Ordenação inválida") no `GlobalExceptionHandler`; antes, `?sort=campoInexistente` gerava 500. No Spring Data 4 essa classe fica em `org.springframework.data.core` (no 3 ficava em `org.springframework.data.mapping`).
+
+**Testes:** `ErrosApiIntegrationTest` ganhou dois testes.
+- **Ordenação:** cria dados próprios, com o agendamento de prazo distante cadastrado antes do próximo, e filtra por `equipamentoId` para não depender do seed. Confere a ordem asc e desc.
+- **Ordenação inválida:** confere o 400.
+
+A suíte tem agora 22 testes, todos passando. `tsc -b` e ESLint da página passaram; a conferência visual no navegador ainda não foi feita.

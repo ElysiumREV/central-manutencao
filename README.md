@@ -23,7 +23,7 @@ Abra:
 - Swagger UI: <http://localhost:8080/swagger-ui.html>
 - Healthcheck: <http://localhost:8080/actuator/health>
 
-O Compose usa credenciais de demonstração locais. Para alterá-las, defina `APP_AUTH_USERNAME` e `APP_AUTH_PASSWORD` no ambiente ou no arquivo `.env` antes de iniciar os serviços. Não use os valores de demonstração fora do ambiente local. O login do frontend usa HTTP Basic; a página solicita autenticação novamente após recarregar.
+**Login de demonstração:** usuário `operador`; a senha é o valor padrão de `APP_AUTH_PASSWORD` em [`docker-compose.yml`](docker-compose.yml). Para alterá-las, defina `APP_AUTH_USERNAME` e `APP_AUTH_PASSWORD` no ambiente ou no arquivo `.env` antes de iniciar os serviços. Não use os valores de demonstração fora do ambiente local. O login do frontend usa HTTP Basic; a página solicita autenticação novamente após recarregar.
 
 Para acompanhar os serviços:
 
@@ -40,9 +40,17 @@ docker compose down
 
 O volume `pgdata` guarda os dados do PostgreSQL. `docker compose down -v` também apaga esse volume.
 
+### Dados de demonstração
+
+Na primeira inicialização, o Flyway aplica `V2__seed_demo.sql`, que cria 15 equipamentos com planos **vencidos**, **próximos** e **em dia**, histórico de leituras e manutenções concluídas, canceladas e agendadas. As datas são relativas ao dia em que o seed roda, então o painel sempre mostra agendamentos para os próximos dias. Para recomeçar do zero:
+
+```bash
+docker compose down -v && docker compose up --build -d
+```
+
 ## Executar sem Docker
 
-É necessário PostgreSQL 16, JDK 21 e Node.js compatível com o Vite usado pelo projeto.
+É necessário JDK 21, Node.js 20+ e um PostgreSQL 16 (pode ser só o do Compose: `docker compose up -d db`).
 
 Configure `DB_URL`, `DB_USER`, `DB_PASSWORD`, `APP_AUTH_USERNAME` e `APP_AUTH_PASSWORD` no ambiente do backend. As migrations Flyway são executadas na inicialização.
 
@@ -59,7 +67,7 @@ npm ci
 npm run dev
 ```
 
-No modo Vite, configure o proxy local da API conforme `frontend/vite.config.ts`, ou use Docker Compose, que fornece o proxy Nginx.
+Acesse <http://localhost:5173>. O Vite já repassa `/api` para `http://localhost:8080` (ver `frontend/vite.config.ts`); no Docker esse papel é do Nginx. Por isso o frontend nunca precisa de CORS nem de URL da API embutida.
 
 ## Funcionalidades
 
@@ -83,7 +91,13 @@ No modo Vite, configure o proxy local da API conforme `frontend/vite.config.ts`,
 
 ## Testes
 
-O backend possui testes unitários do cálculo e do ciclo do plano, além de testes de integração com PostgreSQL via Testcontainers. Docker precisa estar disponível para a suíte de integração.
+O backend possui 22 testes. Os unitários cobrem o cálculo de status nos limites (em dia, próxima, vencida) e o ciclo do plano. Os de integração, com PostgreSQL 16 via Testcontainers, cobrem:
+- leituras regressivas, retroativas, futuras ou em equipamento inativo;
+- conclusão preventiva recalculando o vencimento;
+- agendamento duplicado e agendamento para plano inativo;
+- o contrato HTTP de erros (400 com campos inválidos ou ordenação inválida, 409 e 401) e a ordenação da lista de manutenções.
+
+Docker precisa estar disponível para a suíte de integração.
 
 ```bash
 cd backend
@@ -100,7 +114,9 @@ npm run build
 
 ## Organização
 
-O backend é organizado por funcionalidade (`equipamento`, `plano`, `leitura`, `manutencao`, `alerta`, `dashboard` e `seguranca`). Entidades concentram operações de domínio; Services aplicam regras transacionais; Controllers expõem DTOs REST. O schema é versionado em `backend/src/main/resources/db/migration`.
+O backend é organizado por funcionalidade (`equipamento`, `plano`, `leitura`, `manutencao`, `alerta`, `dashboard`, `seguranca` e `shared`). Entidades concentram operações de domínio; Services aplicam regras transacionais; Controllers expõem DTOs REST. O schema é versionado em `backend/src/main/resources/db/migration`.
+
+Erros seguem o padrão `ProblemDetail` (RFC 7807), centralizado em `shared/GlobalExceptionHandler`: 400 para validação (com o campo `errors` indicando cada campo inválido), 404 para recurso inexistente, 409 para conflitos (código duplicado, agendamento duplicado, edição concorrente) e 422 para regra de negócio violada. Detalhes internos, como o SQL de uma constraint, ficam só no log.
 
 O frontend separa as páginas por funcionalidade em `frontend/src/features`; `frontend/src/api/http.ts` centraliza chamadas REST e autenticação.
 
@@ -112,7 +128,5 @@ A autenticação atual usa um único usuário em memória, configurável por amb
 
 ## Próximas melhorias
 
-- README screenshots e roteiro/vídeo de apresentação.
-- Seed demonstrativo e teste completo do fluxo operacional.
 - Persistência e administração de usuários, autorização por papéis e HTTPS em implantação.
 - Testes de componentes e geração dos tipos TypeScript a partir do OpenAPI.
