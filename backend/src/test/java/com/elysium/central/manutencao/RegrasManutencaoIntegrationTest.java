@@ -106,7 +106,7 @@ class RegrasManutencaoIntegrationTest {
                 () -> leituraService.registrar(equipamento.getId(), new RegistrarLeituraRequest(
                         new BigDecimal("1410.0"), ultimaLeitura.minusSeconds(60), "Operador", null)));
 
-        assertEquals(HttpStatus.UNPROCESSABLE_ENTITY, erro.getStatusCode());
+        assertEquals(HttpStatus.UNPROCESSABLE_CONTENT, erro.getStatusCode());
     }
 
     @Test
@@ -117,7 +117,7 @@ class RegrasManutencaoIntegrationTest {
                 () -> leituraService.registrar(equipamento.getId(), new RegistrarLeituraRequest(
                         new BigDecimal("1399.0"), Instant.now().minusSeconds(60), "Operador", null)));
 
-        assertEquals(HttpStatus.UNPROCESSABLE_ENTITY, erro.getStatusCode());
+        assertEquals(HttpStatus.UNPROCESSABLE_CONTENT, erro.getStatusCode());
         assertEquals(new BigDecimal("1400.0"), equipamentoRepository.findById(equipamento.getId())
                 .orElseThrow().getHorimetroAtual());
     }
@@ -130,7 +130,7 @@ class RegrasManutencaoIntegrationTest {
                 () -> leituraService.registrar(equipamento.getId(), new RegistrarLeituraRequest(
                         new BigDecimal("1410.0"), Instant.now().plusSeconds(3600), "Operador", null)));
 
-        assertEquals(HttpStatus.UNPROCESSABLE_ENTITY, erro.getStatusCode());
+        assertEquals(HttpStatus.UNPROCESSABLE_CONTENT, erro.getStatusCode());
     }
 
     @Test
@@ -153,7 +153,7 @@ class RegrasManutencaoIntegrationTest {
                 () -> leituraService.registrar(equipamento.getId(), new RegistrarLeituraRequest(
                         new BigDecimal("1410.0"), Instant.now().minusSeconds(60), "Operador", null)));
 
-        assertEquals(HttpStatus.UNPROCESSABLE_ENTITY, erro.getStatusCode());
+        assertEquals(HttpStatus.UNPROCESSABLE_CONTENT, erro.getStatusCode());
     }
 
     @Test
@@ -166,7 +166,7 @@ class RegrasManutencaoIntegrationTest {
                 () -> manutencaoService.agendar(new AgendarManutencaoRequest(equipamento.getId(), plano.id(),
                         TipoManutencao.PREVENTIVA, LocalDate.now().plusDays(1), "Oficina", null)));
 
-        assertEquals(HttpStatus.UNPROCESSABLE_ENTITY, erro.getStatusCode());
+        assertEquals(HttpStatus.UNPROCESSABLE_CONTENT, erro.getStatusCode());
     }
 
     @Test
@@ -194,7 +194,7 @@ class RegrasManutencaoIntegrationTest {
                 () -> manutencaoService.agendar(new AgendarManutencaoRequest(equipamento.getId(), plano.id(),
                         TipoManutencao.PREVENTIVA, ontem, "Oficina", null)));
 
-        assertEquals(HttpStatus.UNPROCESSABLE_ENTITY, erro.getStatusCode());
+        assertEquals(HttpStatus.UNPROCESSABLE_CONTENT, erro.getStatusCode());
     }
 
     @Test

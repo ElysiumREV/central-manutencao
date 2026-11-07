@@ -72,12 +72,12 @@ public class PlanoService {
     private void validarValores(BigDecimal intervalo, BigDecimal antecedencia,
             BigDecimal ultimaExecucao, Equipamento equipamento) {
         if (antecedencia.compareTo(intervalo) >= 0) {
-            throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_ENTITY,
+            throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_CONTENT,
                     "A antecedência do alerta deve ser menor que o intervalo do plano. "
                             + "Se fosse igual ou maior, o plano entraria em alerta logo após cada manutenção.");
         }
         if (ultimaExecucao.compareTo(equipamento.getHorimetroAtual()) > 0) {
-            throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_ENTITY,
+            throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_CONTENT,
                     "O horímetro da última execução não pode superar o horímetro atual do equipamento.");
         }
     }

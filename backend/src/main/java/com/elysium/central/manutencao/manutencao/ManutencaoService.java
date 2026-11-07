@@ -44,7 +44,7 @@ public class ManutencaoService {
         Equipamento equipamento = obterEquipamento(request.equipamentoId());
         validarEquipamentoAtivo(equipamento);
         if (request.dataAgendada().isBefore(LocalDate.now(zonaOperacao))) {
-            throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_ENTITY,
+            throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_CONTENT,
                     "A data agendada não pode estar no passado.");
         }
         PlanoManutencao plano = obterPlanoOpcional(request.planoId(), equipamento);
@@ -118,7 +118,7 @@ public class ManutencaoService {
         PlanoManutencao plano = planoRepository.findById(planoId).orElseThrow(() ->
                 new ResponseStatusException(HttpStatus.NOT_FOUND, "Plano não encontrado."));
         if (!plano.getEquipamento().getId().equals(equipamento.getId())) {
-            throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_ENTITY,
+            throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_CONTENT,
                     "O plano informado pertence a outro equipamento.");
         }
         return plano;
@@ -126,18 +126,18 @@ public class ManutencaoService {
 
     private void validarEquipamentoAtivo(Equipamento equipamento) {
         if (equipamento.getStatus() == StatusEquipamento.INATIVO) {
-            throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_ENTITY,
+            throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_CONTENT,
                     "Não é possível criar manutenção para equipamento inativo.");
         }
     }
 
     private void validarPlanoPreventivo(TipoManutencao tipo, PlanoManutencao plano, boolean exigirAtivo) {
         if (tipo == TipoManutencao.PREVENTIVA && plano == null) {
-            throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_ENTITY,
+            throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_CONTENT,
                     "Manutenção preventiva precisa estar vinculada a um plano.");
         }
         if (exigirAtivo && plano != null && !plano.isAtivo()) {
-            throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_ENTITY,
+            throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_CONTENT,
                     "Não é possível agendar manutenção para plano inativo.");
         }
     }
@@ -145,15 +145,15 @@ public class ManutencaoService {
     private void validarExecucao(Instant dataExecucao, BigDecimal horimetroExecucao,
             Equipamento equipamento, PlanoManutencao plano) {
         if (dataExecucao.isAfter(Instant.now())) {
-            throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_ENTITY,
+            throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_CONTENT,
                     "A data de execução não pode estar no futuro.");
         }
         if (horimetroExecucao.compareTo(equipamento.getHorimetroAtual()) > 0) {
-            throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_ENTITY,
+            throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_CONTENT,
                     "O horímetro da execução não pode superar o horímetro atual do equipamento.");
         }
         if (plano != null && horimetroExecucao.compareTo(plano.getHorimetroUltimaExecucao()) < 0) {
-            throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_ENTITY,
+            throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_CONTENT,
                     "O horímetro da execução não pode ser menor que a execução anterior do plano.");
         }
     }

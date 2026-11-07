@@ -29,20 +29,20 @@ public class LeituraService {
                 new ResponseStatusException(HttpStatus.NOT_FOUND, "Equipamento não encontrado."));
 
         if (equipamento.getStatus() == StatusEquipamento.INATIVO) {
-            throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_ENTITY,
+            throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_CONTENT,
                     "Não é possível registrar leitura para equipamento inativo.");
         }
         if (request.dataHora().isAfter(Instant.now())) {
-            throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_ENTITY,
+            throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_CONTENT,
                     "A data da leitura não pode estar no futuro.");
         }
         if (equipamento.getDataUltimaLeitura() != null
                 && request.dataHora().isBefore(equipamento.getDataUltimaLeitura())) {
-            throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_ENTITY,
+            throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_CONTENT,
                     "A data da leitura não pode ser anterior à última leitura registrada.");
         }
         if (request.valor().compareTo(equipamento.getHorimetroAtual()) < 0) {
-            throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_ENTITY,
+            throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_CONTENT,
                     "O valor da leitura não pode ser menor que o horímetro atual.");
         }
 
